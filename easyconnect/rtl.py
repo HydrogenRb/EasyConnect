@@ -500,9 +500,9 @@ def _body(s, module, first, last):
                 pos = after
                 continue
             if word in ("always", "always_comb", "always_ff", "always_latch", "initial", "final"):
-                after = s.statement_end(pos + 1, stop)
-                module.driven.update(_driven(s, pos + 1, after))
-                pos = after
+                # Procedural bodies are opaque to hierarchy wiring. Locate their
+                # extent only; do not inspect assignments or infer their drivers.
+                pos = s.statement_end(pos + 1, stop)
                 continue
             if word in ("function", "task", "class", "property", "sequence", "specify", "clocking"):
                 closing = {"specify": "endspecify"}.get(word, "end" + word)
@@ -764,4 +764,3 @@ class Design:
         _mark_child_drivers(self)
         referenced = {instance.module for module in self.modules.values() for instance in module.instances}
         self.roots = sorted(set(self.modules) - referenced)
-

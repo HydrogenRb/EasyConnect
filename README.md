@@ -1,4 +1,4 @@
-# EasyConnect 1.0.0
+# EasyConnect 1.0.1
 
 用 Python 标准库为 Verilog / SystemVerilog 工程跨层级连线，提供建图、增加、修改、删除和事务恢复。支持 `.v` 文件按 SystemVerilog 语法使用；Python 要求 **3.8 或以上**，不需要安装第三方 Python 包。
 
@@ -61,7 +61,9 @@ python EasyConnect.py remove fifo_route --src ./my_rtl
 
 `remove` 也可写成 `rm` / `delete`；`change` 也可写成 `update` / `modify`。这些命令管理通过 EasyConnect 添加的连接，不会按字符串搜索并删除任意已有 RTL 逻辑。
 
-目标端口已经连接时，默认拒绝覆盖。明确需要重新绑定时可加 `--replace`；已有过程赋值、连续赋值等驱动冲突仍会拒绝。请检查 diff 中被替换的连接。
+目标端口已经连接时，默认拒绝覆盖。明确需要重新绑定时可加 `--replace`；已有连续赋值、声明初始化和子模块输出连接等结构上可见的驱动冲突仍会拒绝。请检查 diff 中被替换的连接。
+
+`always@(*)`、`always @*`、`always_comb`、`always_ff`、`always_latch` 等过程块只定位边界并整体跳过，既不分析内部赋值，也不改变原文；`initial` / `final` 同样处理。工具关注模块、端口、声明和例化连接，不检查过程逻辑内部的驱动关系。因此已有过程赋值造成的冲突不会由本工具检出，需由工程编译/lint 检查。
 
 ## 宏位宽和多维数组
 

@@ -19,6 +19,21 @@ class EngineTests(unittest.TestCase):
             check_text(self, texts["design.v"])
             return texts["design.v"], details
 
+    def test_wiring_preserves_always_block_verbatim(self):
+        block = """    always@(*) begin
+        // Existing business logic is opaque to EasyConnect.
+        if (enable) result = data;
+        else result = 8'h00;
+    end"""
+        code = """module top(input wire enable, input wire [7:0] data);
+    reg [7:0] result;
+%s
+endmodule
+""" % block
+        output, _ = self.plan(code, "top.result", "top.observed")
+        self.assertIn(block, output)
+        self.assertEqual(output.count("always@(*)"), 1)
+
     def test_parameter_defaults_overrides_and_localparam_chain(self):
         output, _ = self.plan("""
 module top(); Src #(.W(12)) s(); Dst d(); endmodule

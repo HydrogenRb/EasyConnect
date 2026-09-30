@@ -2,6 +2,7 @@
 import tempfile
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 
 from easyconnect.rtl import Design, RTLException, mask
 
@@ -36,7 +37,7 @@ endmodule : A
         self.assertEqual(module.ports["clk"].width, "")
         self.assertEqual(module.signals["internal_b"].unpacked, "[0:3]")
         self.assertEqual(module.parameters, {"W": "8"})
-        self.assertTrue({"c", "d"}.issubset(module.driven))
+        self.assertFalse({"c", "d"} & module.driven)
         self.assertEqual(raw[module.name_start:module.name_end], "A")
         self.assertEqual(raw[module.ports_open], "(")
         self.assertEqual(raw[module.ports_close], ")")
@@ -57,7 +58,7 @@ module Empty; endmodule
         self.assertTrue(module.ports["a"].signed)
         self.assertEqual(module.ports["b"].kind, "reg")
         self.assertEqual(module.ports["b"].direction, "output")
-        self.assertIn("b", module.driven)
+        self.assertNotIn("b", module.driven)
         self.assertIsNone(modules["Empty"].ports_open)
 
     def test_scopes_instances_parameters_and_connections(self):
@@ -182,7 +183,7 @@ module C(output d, inout e, input index); endmodule
         self.assertNotIn("index", module.driven)
         self.assertNotIn("clk", module.driven)
 
-    def test_comparison_is_not_a_driver(self):
+    def test_always_comb_body_is_ignored(self):
         module = self.design("""module A(input a,b, output logic c);
  always_comb begin
    if (a <= b) c = 1;
@@ -190,7 +191,30 @@ module C(output d, inout e, input index); endmodule
  end
 endmodule
 """).modules["A"]
-        self.assertEqual(module.driven, {"c"})
+        self.assertEqual(module.driven, set())
+
+    def test_procedural_blocks_skip_assignment_analysis(self):
+        for header in ("always@(*)", "always @*", "always_comb", "always_latch",
+                       "always_ff @(posedge clk)", "initial", "final"):
+            with self.subTest(header=header), patch("easyconnect.rtl._driven") as scan:
+                raw = """module A(input clk, input a, output logic q);
+%s begin
+  if (a) begin q = a; end
+  else begin
+    case(a)
+      1'b0: q = 0;
+      default: q = 1;
+    endcase
+  end
+end
+B actual_instance();
+endmodule
+""" % header
+                module = self.design(raw).modules["A"]
+                scan.assert_not_called()
+                self.assertEqual(module.driven, set())
+                self.assertEqual([i.name for i in module.instances], ["actual_instance"])
+                self.assertEqual(module.text, raw)
 
     def test_multiline_comments_and_functionlike_macro_width(self):
         raw = ("module A(\r\n"

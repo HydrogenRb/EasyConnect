@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import hashlib
 import re
 
+from . import __version__
 from .rtl import Design, _connection_lhs_names
 
 
@@ -658,7 +659,7 @@ def route(root, texts, spec):
 def build_map(root, texts, top=None, cbb=None):
     design = Design(root, texts=texts)
     hierarchy = Hierarchy(design, top, cbb)
-    return {"version": "1.0.0", "elaborated": False, "top": hierarchy.top,
+    return {"version": __version__, "elaborated": False, "top": hierarchy.top,
             "instances": [{"path": n.path, "module": n.module,
                            "status": "normal" if n.module in design.modules else "cbb",
                            "parent": n.parent.path if n.parent else None,
