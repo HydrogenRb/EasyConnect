@@ -11,6 +11,8 @@ import os
 import re
 from typing import Dict, List, Optional, Set, Tuple
 
+from .diagnostics import step
+
 
 class RTLException(ValueError):
     pass
@@ -67,9 +69,6 @@ def mask(source):
     return "".join(lines)
 
 
-preprocess = mask
-
-
 @dataclass
 class Signal:
     name: str
@@ -80,9 +79,6 @@ class Signal:
     declaration: Optional[Tuple[int, int]] = None
     unpacked: str = ""
     unsupported: Optional[str] = None
-
-
-Port = Signal
 
 
 @dataclass
@@ -149,6 +145,7 @@ class Module:
     unsafe: List[str] = field(default_factory=list)
     driven: Set[str] = field(default_factory=set)
     parameters: Dict[str, str] = field(default_factory=dict)
+    ignored_regions: List[dict] = field(default_factory=list)
 
 
 class _Source:
@@ -176,7 +173,17 @@ class _Source:
     def error(self, i, message):
         offset = self.a[i] if i < len(self.a) else len(self.raw)
         line = self.raw.count("\n", 0, offset) + 1
-        raise RTLException("{}:{}: {}".format(self.path, line, message))
+        line_start = self.raw.rfind("\n", 0, offset) + 1
+        column = offset - line_start + 1
+        line_end = self.raw.find("\n", offset)
+        line_end = len(self.raw) if line_end < 0 else line_end
+        context_start = max(line_start, offset - 60)
+        prefix = "..." if context_start > line_start else ""
+        snippet = prefix + self.raw[context_start:min(line_end, context_start + 160)].expandtabs(4).rstrip("\r")
+        caret = len(prefix + self.raw[context_start:offset].expandtabs(4))
+        module = " [module {}]".format(self.module) if hasattr(self, "module") else ""
+        raise RTLException("{}:{}:{}{}: {}\n  {}\n  {}^".format(
+            self.path, line, column, module, message, snippet, " " * caret))
 
     def frag(self, start, end):
         if start >= end:
@@ -215,30 +222,28 @@ class _Source:
         word = t[pos]
         if word in ("unique", "unique0", "priority"):
             return self.statement_end(pos + 1, stop)
-        if word in ("begin", "fork"):
-            endings = {"end"} if word == "begin" else {"join", "join_any", "join_none"}
-            pos += 1
-            if pos < stop and t[pos] == ":":
-                pos += 2
-            while pos < stop and t[pos] not in endings:
-                pos = self.statement_end(pos, stop)
-            if pos >= stop:
-                self.error(start, "unmatched {}".format(word))
-            pos += 1
-            if pos < stop and t[pos] == ":":
-                pos += 2
-            return pos
-        if word in ("case", "casex", "casez"):
+        if word in ("begin", "fork", "case", "casex", "casez", "randcase"):
+            # Balance only the relevant block keywords. Do not recursively
+            # parse each statement inside an opaque procedural/generate block.
+            openings, endings = ({"begin"}, {"end"}) if word == "begin" else (
+                ({"fork"}, {"join", "join_any", "join_none"}) if word == "fork" else
+                ({"case", "casex", "casez", "randcase"}, {"endcase"}))
             depth, pos = 1, pos + 1
             while pos < stop:
-                if t[pos] in ("case", "casex", "casez"):
+                if t[pos] in openings and not (t[pos] == "fork" and t[pos - 1] in ("wait", "disable")):
                     depth += 1
-                elif t[pos] == "endcase":
+                elif t[pos] in endings:
                     depth -= 1
                     if depth == 0:
-                        return pos + 1
+                        pos += 1
+                        if pos < stop and t[pos] == ":":
+                            pos += 2
+                        return pos
                 pos += 1
-            self.error(start, "unmatched case")
+            self.error(start, "unmatched {} while locating block boundary; expected {} before module end".format(
+                word, "/".join(sorted(endings))))
+        if word in ("always", "always_comb", "always_ff", "always_latch", "initial", "final"):
+            return self.statement_end(pos + 1, stop)
         if word in ("if", "for", "foreach", "while", "repeat", "wait"):
             pos += 1
             if pos < stop and t[pos] == "(":
@@ -277,14 +282,12 @@ def _declarations(s, first, last, default_direction=None):
     for start, end in s.split(first, last):
         if start == end:
             continue
-        i, fresh = start, False
+        i = start
         if s.t[i] in DIRECTIONS:
             direction, width, signed, kind, unsupported = s.t[i], "", False, "wire", None
             i += 1
-            fresh = True
         elif s.t[i] in KINDS or s.t[i] in UNSUPPORTED_KINDS:
             width, signed, kind, unsupported = "", False, "wire", None
-            fresh = True
         while i < end and (s.t[i] in KINDS or s.t[i] in QUALIFIERS or s.t[i] in UNSUPPORTED_KINDS):
             token = s.t[i]
             if token in KINDS:
@@ -438,20 +441,15 @@ def _loop(s, first, last, label):
 
 
 def _driven(s, first, last):
-    """Conservatively collect assignment LHS identifiers, including slices."""
+    """Collect structural assignment/initializer LHS names; never inspect processes."""
     driven = set()
     for pos in range(first, last):
-        if s.t[pos] not in ("=", "<=", "+=", "-=", "++", "--"):
+        if s.t[pos] != "=":
             continue
         i = pos - 1
         while i >= first and s.t[i] == "]":
             i = s.pairs[i] - 1
         if i >= first and IDENT.fullmatch(s.t[i]):
-            # '<=' in conditions and RHS expressions is a comparison. An
-            # assignment LHS starts a statement, possibly after a control ')'.
-            if s.t[pos] == "<=" and i > first and s.t[i - 1] not in (
-                    ";", "begin", "end", "else", ":", ")"):
-                continue
             driven.add(s.t[i])
         elif i >= first and s.t[i] == "}":
             opening = s.pairs[i]
@@ -543,17 +541,13 @@ def _body(s, module, first, last):
                 pos = after
                 continue
             if word in ("if", "case", "casex", "casez"):
-                module.unsafe.append("conditional generate requires elaboration")
-                if word == "if":
-                    body_first = s.pairs[pos + 1] + 1 if pos + 1 < stop and t[pos + 1] == "(" else pos + 1
-                    after = s.statement_end(body_first, stop)
-                    walk(body_first, after, scopes, loops)
-                    if after < stop and t[after] == "else":
-                        else_end = s.statement_end(after + 1, stop)
-                        walk(after + 1, else_end, scopes, loops)
-                        after = else_end
-                else:
-                    after = s.statement_end(pos, stop)
+                after = s.statement_end(pos, stop)
+                module.ignored_regions.append({
+                    "kind": "conditional_generate", "file": module.path,
+                    "line": s.raw.count("\n", 0, s.a[pos]) + 1,
+                    "start": s.a[pos], "end": s.b[after - 1],
+                    "reason": "Conditional generate is skipped without evaluating or traversing branches",
+                })
                 pos = after
                 continue
             if word in DIRECTIONS or word in KINDS or word in UNSUPPORTED_KINDS:
@@ -616,6 +610,7 @@ def _parse_file(path, raw):
         if pos >= len(t) or not IDENT.fullmatch(t[pos]):
             s.error(pos, "missing module name")
         name_pos, name = pos, t[pos]
+        s.module = name
         pos += 1
         parameters = {}
         if pos < len(t) and t[pos] == "#":
@@ -671,7 +666,7 @@ def _parse_file(path, raw):
                     signal = Signal(t[a])
                     module.ports[signal.name] = signal
                     module.signals[signal.name] = signal
-        _body(s, module, body_first, end)
+        step("scan module {} structure".format(name), _body, s, module, body_first, end)
         for signal in module.ports.values():
             if signal.direction is None:
                 signal.unsupported = signal.unsupported or "port direction is not declared"
@@ -754,7 +749,7 @@ class Design:
                 self.texts[normalized] = value
         self.modules = {}
         for relative, raw in sorted(self.texts.items()):
-            for module in _parse_file(relative, raw):
+            for module in step("parse RTL file {}".format(relative), _parse_file, relative, raw):
                 if module.name in self.modules:
                     old = self.modules[module.name]
                     raise RTLException("duplicate module {!r} in {} and {}".format(module.name, old.path, relative))

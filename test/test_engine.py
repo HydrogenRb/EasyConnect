@@ -34,6 +34,45 @@ endmodule
         self.assertIn(block, output)
         self.assertEqual(output.count("always@(*)"), 1)
 
+    def test_route_outside_conditional_generate_preserves_block(self):
+        block = """generate
+  if (USE) begin : logic_on
+    always @(*) begin
+      if (enable) begin result = data; end
+      else begin result = 8'h00; end
+    end
+  end else begin : logic_off
+    always @(*) begin result = 8'h01; end
+  end
+endgenerate"""
+        output, _ = self.plan("""module top #(parameter USE=1)(input enable, input [7:0] data);
+reg [7:0] result;
+%s
+Dst d();
+endmodule
+module Dst(); wire [7:0] received; endmodule
+""" % block, "top.result", "top.d.received")
+        self.assertIn(block, output)
+
+    def test_skipped_branch_instances_keep_original_module_definition(self):
+        leaf = "module Leaf(); wire value; endmodule"
+        output, _ = self.plan("""module top(input wire source);
+generate if (1) begin : hidden Leaf h(); end endgenerate
+Leaf selected();
+endmodule
+""" + leaf, "top.source", "top.selected.value")
+        self.assertIn(leaf, output)
+        self.assertIn("begin : hidden Leaf h(); end", output)
+        self.assertRegex(output, r"Leaf__ec_\w+\s+selected")
+
+    def test_request_into_skipped_branch_explains_why_path_is_missing(self):
+        with self.assertRaisesRegex(ValueError, "conditional generate branches were skipped at design.v:2"):
+            self.plan("""module top(input wire source);
+if(1) begin : hidden Dst d(); end
+endmodule
+module Dst(); wire value; endmodule
+""", "top.source", "top.hidden.d.value")
+
     def test_parameter_defaults_overrides_and_localparam_chain(self):
         output, _ = self.plan("""
 module top(); Src #(.W(12)) s(); Dst d(); endmodule

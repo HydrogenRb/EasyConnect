@@ -95,6 +95,33 @@ class EasyConnectTests(unittest.TestCase):
         for command in ("add", "remove", "change", "map", "list"):
             self.assertIn(command, help_result.stdout)
 
+    def test_verbose_map_keeps_json_stdout_clean(self):
+        self.fixture()
+        result = self.run_cli("map", "--top", "top", "--verbose")
+        self.assertEqual(json.loads(result.stdout)["top"], "top")
+        self.assertIn("scan RTL source directory", result.stderr)
+        self.assertIn("parse RTL file", result.stderr)
+
+    def test_parser_failure_reports_stage_connection_and_source_excerpt(self):
+        self.design("module top(input a, output logic q);\nalways @(*) begin\nq=a;\nendmodule\n")
+        before = self.rtl_snapshot()
+        result = self.add("top.a", "top.out", name="broken", ok=False)
+        for context in ("Command: add", "Source root:", "Stage:", "replay connection broken",
+                        "parse RTL file design.v", "scan module top", "design.v:2:13",
+                        "[module top]", "always @(*) begin", "^"):
+            self.assertIn(context, result.stderr)
+        self.assertEqual(self.rtl_snapshot(), before)
+
+    def test_missing_target_reports_endpoint_resolution_stage(self):
+        self.fixture()
+        result = self.add(destination="top.missing.value", ok=False)
+        self.assertIn("resolve target endpoint top.missing.value", result.stderr)
+
+    def test_shape_failure_reports_shape_validation_stage(self):
+        self.design("module top(input [7:0] source); wire [3:0] target; endmodule")
+        result = self.add("top.source", "top.target", ok=False)
+        self.assertIn("validate endpoint shapes and generate lanes", result.stderr)
+
     def test_map_recurses_subdirectories(self):
         baseline = self.fixture()
         result = self.run_cli("map", "--top", "top")

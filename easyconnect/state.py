@@ -14,6 +14,8 @@ import tempfile
 from contextlib import contextmanager
 from pathlib import Path
 
+from .diagnostics import step
+
 
 RTL_SUFFIXES = {".v", ".sv", ".vh", ".svh"}
 SKIP_DIRS = {".git", ".hg", ".svn", ".easyconnect", ".validation", "__pycache__",
@@ -244,7 +246,8 @@ def _transaction(root, before, after, new_state):
                     "new": None if new_bytes is None else _encode(new_bytes)})
     pending = root / ".easyconnect" / "pending.json"
     _assert_expected(scan_rtl(root), _hashes(before))
-    _atomic_write(pending, _json_bytes({"version": STATE_VERSION, "files": records}))
+    step("write transaction journal", _atomic_write, pending,
+         _json_bytes({"version": STATE_VERSION, "files": records}))
     written = []
     try:
         for record in records:
@@ -253,7 +256,8 @@ def _transaction(root, before, after, new_state):
             if _file_bytes(path) != old:
                 raise ValueError("File changed during transaction: {}".format(record["path"]))
             written.append(record)
-            _atomic_write(path, None if record["new"] is None else _decode(record["new"]))
+            step("write file " + record["path"], _atomic_write,
+                 path, None if record["new"] is None else _decode(record["new"]))
         pending.unlink()
     except BaseException as error:
         try:
@@ -322,13 +326,13 @@ def _diff(before, after):
 
 def _prepare(root, operation, spec, connection_id, router):
     assert_no_pending(root)
-    before = scan_rtl(root)
-    state = _load_state(root)
+    before = step("scan RTL source directory", scan_rtl, root)
+    state = step("load connection state", _load_state, root)
     if state is None:
         state = {"version": STATE_VERSION,
                  "baseline": {name: _encode(text.encode("utf-8")) for name, text in before.items()},
                  "expected": _hashes(before), "connections": [], "next_id": 1}
-    _assert_expected(before, state["expected"])
+    step("check external RTL changes", _assert_expected, before, state["expected"])
     try:
         baseline = {name: _decode(data).decode("utf-8") for name, data in state["baseline"].items()}
     except UnicodeError:
@@ -370,7 +374,8 @@ def _prepare(root, operation, spec, connection_id, router):
     texts = baseline
     details = []
     for item in connections:
-        texts, detail = router(root, texts, item)
+        texts, detail = step("replay connection {} ({} -> {})".format(
+            item["id"], item["source"], item["target"]), router, root, texts, item)
         if set(texts) != set(baseline) or not all(isinstance(text, str) for text in texts.values()):
             raise ValueError("Routing engine returned an invalid RTL file set")
         if item.get("top") is None and isinstance(detail, dict) and detail.get("top"):
@@ -393,11 +398,13 @@ def apply_operation(root, operation, spec=None, connection_id=None, dry_run=Fals
         from .engine import route
         router = route
     if dry_run:
-        _, _, _, result = _prepare(root, operation, spec, connection_id, router)
+        _, _, _, result = step("prepare {} preview".format(operation), _prepare,
+                               root, operation, spec, connection_id, router)
         result["dry_run"] = True
         return result
     with _lock(root):
-        before, texts, new_state, result = _prepare(root, operation, spec, connection_id, router)
-        _transaction(root, before, texts, new_state)
+        before, texts, new_state, result = step("prepare {} operation".format(operation), _prepare,
+                                               root, operation, spec, connection_id, router)
+        step("commit RTL and state transaction", _transaction, root, before, texts, new_state)
         result["dry_run"] = False
         return result

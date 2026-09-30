@@ -143,8 +143,85 @@ endmodule
 `endif
 """).modules["A"]
         self.assertTrue(any("preprocessing" in x for x in module.unsafe))
-        self.assertTrue(any("conditional generate" in x for x in module.unsafe))
-        self.assertEqual([i.full_name for i in module.instances], ["yes.u", "no.v"])
+        self.assertFalse(any("conditional generate" in x for x in module.unsafe))
+        self.assertEqual(module.instances, [])
+        self.assertEqual(len(module.ignored_regions), 1)
+
+    def test_generate_if_with_nested_always_is_skipped(self):
+        raw = """module A #(parameter USE=1)(input a, input b, output reg q);
+generate
+  if (USE) begin : selected
+    always @(*) begin
+      if (a) begin q = b; end
+      else begin q = 0; end
+    end
+  end else begin : other
+    always @(*) begin q = a; end
+  end
+endgenerate
+B actual();
+endmodule
+"""
+        module = self.design(raw).modules["A"]
+        self.assertEqual([i.name for i in module.instances], ["actual"])
+        self.assertFalse(module.unsafe)
+        self.assertFalse(module.driven)
+        self.assertEqual(module.text, raw)
+        self.assertEqual(module.ignored_regions[0]["line"], 3)
+
+    def test_single_statement_generate_branches_and_else_if(self):
+        module = self.design("""module A #(parameter P=1)(input a,b, output reg q);
+if(P) always @(*) if(a) q=b; else q=0;
+else if(P==2) always_comb begin q=a; end
+else always @* q=b;
+B actual();
+endmodule
+""").modules["A"]
+        self.assertEqual([i.name for i in module.instances], ["actual"])
+        self.assertFalse(module.unsafe)
+        self.assertEqual(len(module.ignored_regions), 1)
+
+    def test_generate_case_skips_nested_procedures_and_instances(self):
+        module = self.design("""module A #(parameter P=1)(input a, output reg q);
+generate case(P)
+  1: begin : c
+    always @(*) begin
+      case(a) 0: q=0; default: q=1; endcase
+    end
+    B hidden();
+  end
+  default: begin always_comb q=a; end
+endcase endgenerate
+B actual();
+endmodule
+""").modules["A"]
+        self.assertEqual([i.name for i in module.instances], ["actual"])
+        self.assertFalse(module.unsafe)
+
+    def test_conditional_generate_within_for_does_not_hide_siblings(self):
+        module = self.design("""module A(input a, output logic [1:0] q);
+for(genvar i=0;i<2;i++) begin : g
+  if(i==0) begin : special
+    always @(*) begin q[i]=a; end
+  end else begin
+    always_comb q[i]=0;
+  end
+  B actual();
+end
+endmodule
+""").modules["A"]
+        self.assertEqual([i.full_name for i in module.instances], ["g[i].actual"])
+        self.assertFalse(module.unsafe)
+
+    def test_actual_unclosed_begin_reports_location_and_stage(self):
+        with self.assertRaises(RTLException) as caught:
+            self.design("module A(input a, output logic q);\nalways @(*) begin\nq=a;\nendmodule\n")
+        self.assertIn("design.v:2:13", str(caught.exception))
+        self.assertIn("[module A]", str(caught.exception))
+        self.assertIn("always @(*) begin", str(caught.exception))
+        self.assertIn("^", str(caught.exception))
+        self.assertEqual(caught.exception.easyconnect_stages,
+                         ["parse RTL file design.v", "scan module A structure"])
 
     def test_typedef_ports_are_flagged(self):
         module = self.design("module A(input custom_t p, output integer q); endmodule").modules["A"]

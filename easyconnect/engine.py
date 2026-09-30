@@ -7,6 +7,7 @@ import hashlib
 import re
 
 from . import __version__
+from .diagnostics import step, fail
 from .rtl import Design, _connection_lhs_names
 
 
@@ -171,9 +172,12 @@ class Hierarchy:
         matches = [exact] if exact else [n for p, n in self.nodes.items() if p.endswith("." + path)]
         if len(matches) != 1:
             choices = ", ".join(n.path for n in matches[:8])
+            ignored = [region for m in self.design.modules.values() for region in m.ignored_regions]
+            hint = ("; conditional generate branches were skipped at " + ", ".join(
+                "{}:{}".format(r["file"], r["line"]) for r in ignored[:4])) if not matches and ignored else ""
             raise ValueError("{} endpoint instance {!r}{}; use a full symbolic path such as "
-                             "top.g[i].U.pin".format("Ambiguous" if matches else "Unknown", path,
-                                                       " (" + choices + ")" if choices else ""))
+                             "top.g[i].U.pin{}".format("Ambiguous" if matches else "Unknown", path,
+                                                       " (" + choices + ")" if choices else "", hint))
         return matches[0], found[1], found[2]
 
     def definition(self, node):
@@ -242,7 +246,10 @@ def specialize(root, texts, source_path, target_path, top, cbb, name):
         # Count definitions across all roots as well as repeated ancestor occurrences.
         counts = Counter(i.module for m in design.modules.values() for i in m.instances)
         occurrences = sum(n.module == node.module for n in hierarchy.nodes.values())
-        if counts[node.module] <= 1 and occurrences <= 1:
+        # Skipped branches may instantiate any definition. Preserve their
+        # definitions by specializing selected non-root paths conservatively.
+        hidden_uses = any(m.ignored_regions for m in design.modules.values())
+        if counts[node.module] <= 1 and occurrences <= 1 and not hidden_uses:
             continue
         module, parent = design.modules[node.module], hierarchy.definition(node.parent)
         assert_safe(module)
@@ -439,6 +446,11 @@ class Patch:
         return name
 
     def bind(self, inst, port, expression, replace=False):
+        line = self.module.text.count("\n", 0, inst.start) + 1
+        return step("bind instance port {}.{} at {}:{}".format(inst.name, port, self.module.path, line),
+                    self._bind, inst, port, expression, replace)
+
+    def _bind(self, inst, port, expression, replace=False):
         if inst.positional:
             raise ValueError("Positional port connections require named connections: " + inst.name)
         if inst.wildcard:
@@ -509,35 +521,39 @@ def route(root, texts, spec):
     if mode not in ("shared", "indexed"):
         raise ValueError("Unknown generate routing mode: " + mode)
     cbb = spec.get("cbb") or {}
-    initial = Hierarchy(Design(root, texts=texts), spec.get("top"), cbb)
+    design = step("parse source RTL", Design, root, texts=texts)
+    initial = step("build instance hierarchy", Hierarchy, design, spec.get("top"), cbb)
     if any(inst.module == initial.top for mod in initial.design.modules.values() for inst in mod.instances):
         raise ValueError("Selected --top is itself instantiated elsewhere; select the actual root "
                          "to avoid modifying other instances")
-    sn, source, ss = initial.endpoint(spec["source"])
-    tn, target, ts = initial.endpoint(spec["target"])
+    sn, source, ss = step("resolve source endpoint " + spec["source"], initial.endpoint, spec["source"])
+    tn, target, ts = step("resolve target endpoint " + spec["target"], initial.endpoint, spec["target"])
     if sn.path == tn.path and source == target:
         raise ValueError("Source and destination must be different signals")
     canonical_source = sn.path + "." + source + ss
     canonical_target = tn.path + "." + target + ts
-    texts, stages = specialize(root, texts, canonical_source, canonical_target, initial.top, cbb, name)
-    hierarchy = Hierarchy(Design(root, texts=texts), initial.top, cbb)
+    texts, stages = step("specialize shared module definitions", specialize, root, texts,
+                         canonical_source, canonical_target, initial.top, cbb, name)
+    design = step("parse specialized RTL", Design, root, texts=texts)
+    hierarchy = step("rebuild specialized instance hierarchy", Hierarchy, design, initial.top, cbb)
     sn, source, ss = hierarchy.endpoint(canonical_source)
     tn, target, ts = hierarchy.endpoint(canonical_target)
     ancestor = common_ancestor(sn, tn)
     up, down = boundary_path(sn, ancestor), boundary_path(tn, ancestor)
-    sinfo, tinfo = signal_info(sn, source, hierarchy), signal_info(tn, target, hierarchy)
+    sinfo = step("read source signal declaration", signal_info, sn, source, hierarchy)
+    tinfo = step("read target signal declaration", signal_info, tn, target, hierarchy)
     if sinfo is None:
-        raise ValueError("Source signal does not exist: " + canonical_source)
-    ss = lift_expression(ss, sn, hierarchy)
-    ts = lift_expression(ts, tn, hierarchy)
-    sshape = shape_of(sn, sinfo, ss, hierarchy)
-    tshape = shape_of(tn, tinfo, ts, hierarchy)
+        fail("read source signal declaration", "Source signal does not exist: " + canonical_source)
+    ss = step("resolve source selector scope", lift_expression, ss, sn, hierarchy)
+    ts = step("resolve target selector scope", lift_expression, ts, tn, hierarchy)
+    sshape = step("infer source signal shape", shape_of, sn, sinfo, ss, hierarchy)
+    tshape = step("infer target signal shape", shape_of, tn, tinfo, ts, hierarchy)
     if spec.get("width") is not None or spec.get("unpacked") is not None or spec.get("signed"):
         explicit = Shape(spec.get("width") if spec.get("width") is not None else sshape.width,
                          spec.get("unpacked") if spec.get("unpacked") is not None else sshape.unpacked,
                          bool(spec.get("signed")) or sshape.signed)
         if explicit.key() != sshape.key():
-            raise ValueError("Explicit shape does not match the source signal (no implicit truncation)")
+            fail("validate explicit shape", "Explicit shape does not match the source signal (no implicit truncation)")
         sshape = explicit
     lane_kind = spec.get("lane_kind", "auto")
     if lane_kind not in ("auto", "packed", "unpacked"):
@@ -565,7 +581,7 @@ def route(root, texts, spec):
         except ValueError as error:
             shape_errors.append(str(error))
     else:
-        raise ValueError("; ".join(dict.fromkeys(shape_errors)))
+        fail("validate endpoint shapes and generate lanes", "; ".join(dict.fromkeys(shape_errors)))
     tmod = hierarchy.definition(tn)
     smod = hierarchy.definition(sn)
     if tinfo and tinfo.direction == "inout":
@@ -579,9 +595,9 @@ def route(root, texts, spec):
     if tinfo and tinfo.direction == "input" and (tn.path == ancestor.path or ts):
         raise ValueError("Cannot internally drive an input port or part of an input port")
     if tmod and (tinfo is None or tinfo.direction != "input") and target in getattr(tmod, "driven", set()):
-        raise ValueError("Destination already has a driver: " + canonical_target)
+        fail("check structural driver conflicts", "Destination already has a driver: " + canonical_target)
     if tmod and (tinfo is None or tinfo.direction != "input"):
-        check_external_drivers(tmod, target, hierarchy)
+        step("check external port drivers", check_external_drivers, tmod, target, hierarchy)
     patches = {}
     def patch(node):
         mod = hierarchy.definition(node)
@@ -645,20 +661,23 @@ def route(root, texts, spec):
         patch(tn).body.append("assign {}{} = {};".format(target, ts, current_expr))
     by_file = defaultdict(list)
     for p in patches.values():
-        by_file[p.module.path].extend(p.render())
+        by_file[p.module.path].extend(step("render edits for module " + p.module.name, p.render))
     for path, changes in by_file.items():
-        texts[path] = edits(texts[path], changes)
+        texts[path] = step("apply in-memory edits to " + path, edits, texts[path], changes)
     # Reparse all generated declarations and connection lists before committing.
-    Design(root, texts=texts)
+    step("validate generated RTL structure", Design, root, texts=texts)
     return texts, {"top": hierarchy.top, "source": canonical_source, "target": canonical_target,
-                   "mode": mode, "lane_kind": lane_kind, "stages": stages, "warnings": [],
+                   "mode": mode, "lane_kind": lane_kind, "stages": stages,
+                   "warnings": ["Skipped conditional generate at {}:{}; branches were not traversed".format(
+                       region["file"], region["line"]) for module in initial.design.modules.values()
+                       for region in module.ignored_regions],
                    "shape": {"width": common_shape.width, "unpacked": common_shape.unpacked,
                              "signed": common_shape.signed}}
 
 
 def build_map(root, texts, top=None, cbb=None):
-    design = Design(root, texts=texts)
-    hierarchy = Hierarchy(design, top, cbb)
+    design = step("parse source RTL", Design, root, texts=texts)
+    hierarchy = step("build instance hierarchy", Hierarchy, design, top, cbb)
     return {"version": __version__, "elaborated": False, "top": hierarchy.top,
             "instances": [{"path": n.path, "module": n.module,
                            "status": "normal" if n.module in design.modules else "cbb",
@@ -666,6 +685,7 @@ def build_map(root, texts, top=None, cbb=None):
                            "generated": bool(n.instance and getattr(n.instance, "loops", ())) }
                           for n in hierarchy.nodes.values()],
             "modules": {name: {"file": m.path, "unsafe": getattr(m, "unsafe", []),
+                                "ignored_regions": m.ignored_regions,
                                 "ports": {p: {"direction": v.direction, "width": v.width,
                                                "unpacked": getattr(v, "unpacked", ""),
                                                "signed": bool(v.signed)} for p, v in m.ports.items()}}

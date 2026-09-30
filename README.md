@@ -1,4 +1,4 @@
-# EasyConnect 1.0.1
+# EasyConnect 1.0.2
 
 用 Python 标准库为 Verilog / SystemVerilog 工程跨层级连线，提供建图、增加、修改、删除和事务恢复。支持 `.v` 文件按 SystemVerilog 语法使用；Python 要求 **3.8 或以上**，不需要安装第三方 Python 包。
 
@@ -29,6 +29,26 @@ python EasyConnect.py remove fifo_route --src ./my_rtl
 ```
 
 `--dry-run` 输出 unified diff，不写 RTL、状态文件或锁文件。没有 `--dry-run` 时执行编辑。未指定 `--src` 时使用当前工作目录；从其他目录运行脚本时，应给脚本本身提供正确路径。全局参数可以放在子命令前或后。
+
+## 错误定位和过程日志
+
+失败时默认输出命令、RTL 根目录、处理阶段链和具体原因。重放连接时会标明连接 ID 与源/目标路径；解析错误还包括相对文件路径、行、列、模块名、源码片段和 `^` 指示。例如：
+
+```text
+EasyConnect error
+Command: add
+Source root: .../rtl
+Stage: execute add -> prepare add operation -> replay connection fifo (...) -> parse source RTL -> parse RTL file block.v -> scan module top structure
+Reason: block.v:12:17 [module top]: unmatched begin while locating block boundary; expected end before module end
+      always @(*) begin
+                  ^
+```
+
+可加 `--verbose` 实时查看扫描、解析、实例解析、形状检查和写入等阶段。日志走 stderr，不污染 `map` / `list --json` 的 stdout：
+
+```powershell
+python EasyConnect.py add U_C.fifo_rd U_D.fifo_rd_in --src ./my_rtl --name fifo --dry-run --verbose
+```
 
 `map` 输出 JSON，展示模块、实例和未知模块（CBB）。存在唯一顶层时可以省略 `--top`；多个可能的顶层必须明确指定。`U_C.fifo_rd` 这样的短路径仅在唯一匹配时接受；有歧义时使用 `top.U_B.U_C.fifo_rd` 完整实例路径。路径里的名字是**例化名**，不是模块类型名。
 
@@ -64,6 +84,10 @@ python EasyConnect.py remove fifo_route --src ./my_rtl
 目标端口已经连接时，默认拒绝覆盖。明确需要重新绑定时可加 `--replace`；已有连续赋值、声明初始化和子模块输出连接等结构上可见的驱动冲突仍会拒绝。请检查 diff 中被替换的连接。
 
 `always@(*)`、`always @*`、`always_comb`、`always_ff`、`always_latch` 等过程块只定位边界并整体跳过，既不分析内部赋值，也不改变原文；`initial` / `final` 同样处理。工具关注模块、端口、声明和例化连接，不检查过程逻辑内部的驱动关系。因此已有过程赋值造成的冲突不会由本工具检出，需由工程编译/lint 检查。
+
+**条件 generate 同样整体跳过。** 对 `generate if / else if / else` 和 `generate case`，只匹配块边界，不求条件真假，也不遍历里面的过程逻辑、声明或实例。仅存在这些结构不会阻止对同一模块其他位置的连线。`map` 的 `ignored_regions` 和连线结果的 `warnings` 会列出被跳过的位置；若请求的实例在这些分支内，会明确提示路径不可见及跳过位置。
+
+被跳过的分支不参与实例树，因此工具不能向其中的实例布线。若这些分支引用了独立模块定义，自动顶层推断可能出现多个候选，此时显式指定 `--top`。为避免修改普通实例的模块定义时连带影响被跳过分支，存在此类分支时，选中的非根实例会保守地使用专用模块副本。预处理的 `` `ifdef `` 与语言级 generate-if 不同，仍保持原有的未展开诊断。
 
 ## 宏位宽和多维数组
 
@@ -145,7 +169,7 @@ python EasyConnect.py add top.lane_enable 'top.g_lane[i].U_LEAF.enable' --src ./
 
 原信号自身的多维 packed / unpacked 维度仍然保留。如果 payload 本身有 unpacked 维度，外层 lane 也必须用 unpacked，以保证 `signal[i]` 先选择 lane。来自生成族的多个 output 不允许接到 shared 单根线上；请用 indexed 避免多驱动。
 
-当前不支持仅修改某个具体生成 lane，例如 `g_lane[3]`，也不展开条件 generate。indexed 的降序、非单位步长、重复 genvar 名、依赖外层索引的非矩形循环，以及未命名循环需要先改成受支持形式，或增加显式 wrapper。
+当前不支持仅修改某个具体生成 lane，例如 `g_lane[3]`。条件 generate 整体跳过，普通 for-generate 仍参与索引布线。indexed 的降序、非单位步长、重复 genvar 名、依赖外层索引的非矩形循环，以及未命名循环需要先改成受支持形式，或增加显式 wrapper。
 
 ## CBB / 黑盒模块
 
@@ -200,7 +224,7 @@ python EasyConnect.py recover --src ./my_rtl
 
 支持普通 module、ANSI / non-ANSI 端口、显式命名端口连接、常见 `wire` / `reg` / `logic` 声明、命名实例参数覆盖、宏范围以及固定多维数组。逗号并列实例在需要特化时会拆成独立声明，保留各自连接。并非任意合法 SV 都能自动修改。
 
-为避免猜测设计语义，遇到不安全情况会停止并给出原因。特别包括：位置式端口连接/参数覆盖、`.*`、需要替换的简写端口、实例数组、条件 generate、generate 内局部信号/参数声明、复杂宏展开、裸宏类型别名、interface / modport、typedef / struct / union 类型、动态数组 / 队列 / 关联数组和 inout 路由。预处理条件分支和工程编译选项不会被完整执行；目标设计需要先采用工具可确定的源码结构。编辑时 `--top` 必须是扫描范围内没有被例化的实际根模块，不能以一个被多处使用的子模块冒充根模块。
+为避免猜测设计语义，遇到不安全情况会停止并给出原因。特别包括：位置式端口连接/参数覆盖、`.*`、需要替换的简写端口、实例数组、需要遍历的 for-generate 内局部信号/参数声明、复杂宏展开、裸宏类型别名、interface / modport、typedef / struct / union 类型、动态数组 / 队列 / 关联数组和 inout 路由。条件 generate 按上述规则跳过；预处理条件分支和工程编译选项不会被完整执行。编辑时 `--top` 必须是扫描范围内没有被例化的实际根模块，不能以一个被多处使用的子模块冒充根模块。
 
 源代码驱动检查是静态保守检查，不能代替编译器的全部语义分析。连接完成后，应运行工程原来的 SystemVerilog 编译、lint、仿真以及必要的综合检查。
 
@@ -219,6 +243,7 @@ EasyConnect.py          命令行入口与版本
 easyconnect/rtl.py      词法扫描、声明和实例解析
 easyconnect/engine.py   层级、路径、类型与源码变换
 easyconnect/state.py    快照重放、冲突保护和可恢复事务
+easyconnect/diagnostics.py  阶段错误上下文和可选过程日志
 test/                  测试及可复制 RTL 示例
 help_tool/             需求原有的参考建图脚本
 ```

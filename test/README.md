@@ -38,6 +38,8 @@ Remove-Item Env:EASYCONNECT_SLANG_PATH
 | 实例和命名 | 逗号并列实例特化、祖先模块共享、endmodule 标签、端口注释、名称冲突 |
 | 外部驱动 | 已知子模块/CBB 输出、未知 CBB 方向、隐式线网的已有驱动拒绝 |
 | 过程块跳过 | always 家族、initial/final 不调用赋值分析；块后实例仍能找到；连线后 always 原文不变 |
+| 条件 generate 跳过 | 嵌套 always/if/case、无 begin 的单语句分支、else-if、for 中的条件分支、分支外实例和被跳过分支保持不变 |
+| 错误定位 | 阶段链、连接 ID、源/目标路径、文件行列、模块、源码和 caret；verbose 不污染 JSON |
 
 可手动体验的 fixture：
 

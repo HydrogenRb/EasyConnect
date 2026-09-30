@@ -8,6 +8,7 @@ from pathlib import Path
 
 from easyconnect import __version__
 from easyconnect import state
+from easyconnect.diagnostics import step, describe, verbose
 
 
 def _common(parser):
@@ -20,6 +21,8 @@ def _common(parser):
                         help="external module/port metadata JSON file")
     parser.add_argument("--dry-run", action="store_true", default=argparse.SUPPRESS,
                         help="show a diff without writing RTL or state")
+    parser.add_argument("--verbose", action="store_true", default=argparse.SUPPRESS,
+                        help="print processing stages to stderr (JSON stdout remains clean)")
 
 
 def _route_options(parser, allow_name):
@@ -115,15 +118,17 @@ def main(argv=None):
     args = parser.parse_args(argv)
     root = Path(getattr(args, "src", ".")).resolve()
     dry_run = getattr(args, "dry_run", False)
+    trace_token = verbose.set(getattr(args, "verbose", False))
     try:
         if args.command == "map":
             from easyconnect.engine import build_map
             state.assert_no_pending(root)
-            result = build_map(root, state.scan_rtl(root), getattr(args, "top", None),
-                               _cbb(getattr(args, "cbb", None)))
+            texts = step("scan RTL source directory", state.scan_rtl, root)
+            cbb = step("load CBB metadata", _cbb, getattr(args, "cbb", None))
+            result = step("build hierarchy map", build_map, root, texts, getattr(args, "top", None), cbb)
             print(json.dumps(result, ensure_ascii=False, indent=2))
         elif args.command == "list":
-            connections = state.list_connections(root)
+            connections = step("list managed connections", state.list_connections, root)
             if args.json:
                 print(json.dumps(connections, ensure_ascii=False, indent=2))
             elif not connections:
@@ -134,21 +139,25 @@ def main(argv=None):
         elif args.command == "recover":
             if dry_run:
                 raise ValueError("recover does not support --dry-run; it restores the pending transaction")
-            result = state.recover(root)
+            result = step("recover interrupted transaction", state.recover, root)
             print("Interrupted transaction rolled back." if result["recovered"] else "No pending transaction.")
         else:
             operation = {"rm": "remove", "delete": "remove", "update": "change", "modify": "change"}.get(
                 args.command, args.command)
-            spec = _spec(args, operation == "add") if operation in ("add", "change") else None
-            result = state.apply_operation(root, operation, spec, getattr(args, "id", None), dry_run)
+            spec = step("read routing options", _spec, args, operation == "add") if operation in ("add", "change") else None
+            result = step("execute " + operation, state.apply_operation,
+                          root, operation, spec, getattr(args, "id", None), dry_run)
             _report(result)
         return 0
     except (ValueError, OSError) as error:
-        print("EasyConnect error: {}".format(error), file=sys.stderr)
+        print("EasyConnect error\nCommand: {}\nSource root: {}\n{}".format(
+            args.command, root, describe(error)), file=sys.stderr)
         return 2
     except KeyboardInterrupt:
         print("EasyConnect interrupted. If a transaction is pending, run recover.", file=sys.stderr)
         return 130
+    finally:
+        verbose.reset(trace_token)
 
 
 if __name__ == "__main__":
