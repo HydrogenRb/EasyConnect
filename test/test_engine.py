@@ -84,6 +84,46 @@ module Dst(); wire [11:0] data; endmodule
         self.assertIn("output wire", output)
         self.assertNotIn("[BITS-1:0] __ec_", output)
 
+    def test_route_with_multiple_interface_ports_preserves_existing_interfaces(self):
+        source = """
+interface bus_if;
+  logic req;
+  modport host(output req);
+  modport device(input req);
+endinterface
+module top();
+  bus_if a(), b(), c();
+  Src s(.m0(a), .m1(b), .s0(c));
+  Dst d(.m0(a), .m1(b), .s0(c));
+endmodule
+module Src(bus_if.host m0, m1, bus_if.device s0);
+  wire [7:0] data; assign data=8'h42;
+endmodule
+module Dst(bus_if.host m0, m1, bus_if.device s0);
+  wire [7:0] received;
+endmodule
+"""
+        output, _ = self.plan(source, "top.s.data", "top.d.received")
+        self.assertEqual(output.count("bus_if.host m0, m1, bus_if.device s0"), 2)
+        self.assertEqual(output.count(".m0(a), .m1(b), .s0(c)"), 2)
+        self.assertIn("output wire [7:0] __ec_route_out", output)
+        self.assertIn("input wire [7:0] __ec_route_in", output)
+
+    def test_routing_alongside_interface_arrays_preserves_dimensions(self):
+        self.plan("""
+interface bus_if;
+  logic req;
+  modport host(output req);
+  modport device(input req);
+endinterface
+module top();
+  bus_if a[0:1](), b[0:2]();
+  Src s(.a(a), .b(b)); Dst d(.a(a), .b(b));
+endmodule
+module Src(bus_if.host a[0:1], bus_if.device b[0:2]); wire data; endmodule
+module Dst(bus_if.host a[0:1], bus_if.device b[0:2]); wire received; endmodule
+""", "top.s.data", "top.d.received")
+
     def test_overrides_refer_to_parent_parameters(self):
         self.plan("""
 module top #(parameter GLOBAL_W=4)();

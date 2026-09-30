@@ -8,7 +8,7 @@ import re
 
 from . import __version__
 from .diagnostics import step, fail
-from .rtl import Design, _connection_lhs_names
+from .rtl import Design, _connection_lhs_names, mask
 
 
 IDENT = re.compile(r"[A-Za-z_][A-Za-z0-9_$]*\Z")
@@ -479,8 +479,8 @@ class Patch:
                                 " (" + ("," + nl + "    ").join(additions) + ")"))
             else:
                 inside = module.text[module.ports_open + 1:module.ports_close]
-                # A comment-only list is empty; consult parser's ports, not raw text.
-                separator = "," if module.ports else ""
+                # Opaque interface/macro entries still occupy a list element.
+                separator = "," if mask(inside).strip() else ""
                 changes.append((module.ports_close, module.ports_close,
                                 nl + "    " + separator + ("," + nl + "    ").join(additions) + nl))
         declarations = [line for line in body if not line.startswith("assign ")]
@@ -504,7 +504,7 @@ class Patch:
                 additions_by_instance[inst.open].append((inst, port, expression))
         for group in additions_by_instance.values():
             inst = group[0][0]
-            separator = "," if inst.connections else ""
+            separator = "," if mask(module.text[inst.open + 1:inst.close]).strip() else ""
             value = ("," + nl + "        ").join(".{}({})".format(p, expr) for _, p, expr in group)
             changes.append((inst.close, inst.close, nl + "        " + separator + value + nl + "    "))
         return changes
@@ -676,8 +676,9 @@ def route(root, texts, spec):
 
 
 def build_map(root, texts, top=None, cbb=None):
-    design = step("parse source RTL", Design, root, texts=texts)
-    hierarchy = step("build instance hierarchy", Hierarchy, design, top, cbb)
+    design = step("parse hierarchy structure", Design, root, texts=texts, structure_only=True)
+    # Black-box port metadata is only meaningful for wiring, not hierarchy.
+    hierarchy = step("build instance hierarchy", Hierarchy, design, top)
     return {"version": __version__, "elaborated": False, "top": hierarchy.top,
             "instances": [{"path": n.path, "module": n.module,
                            "status": "normal" if n.module in design.modules else "cbb",
@@ -685,8 +686,5 @@ def build_map(root, texts, top=None, cbb=None):
                            "generated": bool(n.instance and getattr(n.instance, "loops", ())) }
                           for n in hierarchy.nodes.values()],
             "modules": {name: {"file": m.path, "unsafe": getattr(m, "unsafe", []),
-                                "ignored_regions": m.ignored_regions,
-                                "ports": {p: {"direction": v.direction, "width": v.width,
-                                               "unpacked": getattr(v, "unpacked", ""),
-                                               "signed": bool(v.signed)} for p, v in m.ports.items()}}
+                                "ignored_regions": m.ignored_regions}
                         for name, m in design.modules.items()}}

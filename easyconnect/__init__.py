@@ -1,3 +1,3 @@
 """EasyConnect: conservative, reversible RTL hierarchy connections."""
 
-__version__ = "1.0.2"
+__version__ = "1.0.3"

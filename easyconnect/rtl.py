@@ -149,7 +149,8 @@ class Module:
 
 
 class _Source:
-    def __init__(self, path, raw):
+    def __init__(self, path, raw, structure_only=False):
+        self.structure_only = structure_only
         self.path, self.raw, self.clean = path, raw, mask(raw)
         matches = list(TOKEN.finditer(self.clean))
         self.t = [match.group() for match in matches]
@@ -275,53 +276,69 @@ def _parameters(s, first, last, output):
             output[candidates[-1]] = s.frag(*right)
 
 
+def _surface(s, first, last):
+    """Token indices outside nested expression/dimension groups."""
+    pos = first
+    while pos < last:
+        if s.t[pos] in ("(", "[", "{"):
+            pos = s.pairs[pos] + 1
+        else:
+            yield pos
+            pos += 1
+
+
 def _declarations(s, first, last, default_direction=None):
-    """Parse grouped declarations, retaining the inherited ANSI attributes."""
+    """Extract names/shapes without validating an existing declaration list.
+
+    In ``bus_if.host a, b, bus_if.device c`` the declarator names are a/b/c,
+    not the repeated type name bus_if. Qualified/interface types remain opaque;
+    their declarations are retained verbatim when adding ordinary signal ports.
+    """
     direction, width, signed, kind, unsupported = default_direction, "", False, "wire", None
     result = []
     for start, end in s.split(first, last):
         if start == end:
             continue
-        i = start
-        if s.t[i] in DIRECTIONS:
-            direction, width, signed, kind, unsupported = s.t[i], "", False, "wire", None
-            i += 1
-        elif s.t[i] in KINDS or s.t[i] in UNSUPPORTED_KINDS:
+        left, decl_end = s.split(start, end, "=")[0]
+        names = [i for i in _surface(s, left, decl_end) if IDENT.fullmatch(s.t[i])]
+        if not names:
+            continue
+        name_pos = names[-1]
+        name = s.t[name_pos]
+        if name in DIRECTIONS | KINDS | QUALIFIERS | UNSUPPORTED_KINDS:
+            continue
+        if name_pos > start:
+            prefix = [s.t[i] for i in _surface(s, start, name_pos)]
+            directions = [word for word in prefix if word in DIRECTIONS]
+            if directions:
+                direction = directions[-1]
             width, signed, kind, unsupported = "", False, "wire", None
-        while i < end and (s.t[i] in KINDS or s.t[i] in QUALIFIERS or s.t[i] in UNSUPPORTED_KINDS):
-            token = s.t[i]
-            if token in KINDS:
-                kind = token
-            elif token in UNSUPPORTED_KINDS:
-                kind, unsupported = token, "unsupported data type {}".format(token)
-            elif token in ("signed", "unsigned"):
-                signed = token == "signed"
-            i += 1
-        dims = []
-        while i < end and s.t[i] == "[":
-            close = s.pairs[i]
-            dims.append(s.frag(i, close + 1))
-            i = close + 1
-        if dims:
+            for word in prefix:
+                if word in KINDS:
+                    kind = word
+                elif word in ("signed", "unsigned"):
+                    signed = word == "signed"
+            opaque = [word for word in prefix if word not in DIRECTIONS | KINDS | QUALIFIERS]
+            if opaque:
+                kind = "".join(opaque)
+                unsupported = "signal shape is opaque for type {}".format(kind)
+                if not directions:
+                    direction = None
+            pos, dims = start, []
+            while pos < name_pos:
+                if s.t[pos] in ("(", "[", "{"):
+                    close = s.pairs[pos]
+                    if s.t[pos] == "[":
+                        dims.append(s.frag(pos, close + 1))
+                    pos = close + 1
+                else:
+                    pos += 1
             width = "".join(dims)
-        if i >= end:
-            continue
-        # User-defined types/interfaces are visible but cannot be safely routed.
-        if i + 1 < end and (IDENT.fullmatch(s.t[i]) or s.t[i].startswith("`")) and IDENT.fullmatch(s.t[i + 1]):
-            kind = s.t[i]
-            unsupported = "unsupported user-defined data type {}".format(kind)
-            i += 1
-        if not IDENT.fullmatch(s.t[i]):
-            continue
-        name = s.t[i]
-        i += 1
-        unpacked = []
-        while i < end and s.t[i] == "[":
-            close = s.pairs[i]
-            unpacked.append(s.frag(i, close + 1))
-            i = close + 1
-        if i < end and s.t[i] not in ("=",):
-            unsupported = "unsupported declaration suffix: {}".format(s.frag(i, end))
+        pos, unpacked = name_pos + 1, []
+        while pos < decl_end and s.t[pos] == "[":
+            close = s.pairs[pos]
+            unpacked.append(s.frag(pos, close + 1))
+            pos = close + 1
         result.append(Signal(name=name, direction=direction, width=width, signed=signed,
                              kind=kind, declaration=(s.a[start], s.b[end - 1]),
                              unpacked="".join(unpacked), unsupported=unsupported))
@@ -341,17 +358,16 @@ def _connections(s, opening, closing):
             positional = True
             continue
         name = s.t[start + 1]
-        if name in connections:
-            s.error(start, "duplicate named connection {}".format(name))
         if start + 2 == end:
             connections[name] = name
             shorthand.add(name)
+            spans.pop(name, None)
         elif start + 2 < end and s.t[start + 2] == "(" and s.pairs[start + 2] == end - 1:
             a, b = s.b[start + 2], s.a[end - 1]
             connections[name] = s.raw[a:b].strip()
             spans[name] = (a, b)
-        else:
-            s.error(start, "malformed named connection")
+            shorthand.discard(name)
+        # Other existing forms are opaque, not a reason to reject the module.
     return connections, spans, positional, wildcard, shorthand
 
 
@@ -364,12 +380,13 @@ def _candidate(s, start, stop, scopes, loops):
         if pos >= stop or t[pos] != "(":
             return None
         closing = s.pairs[pos]
-        connections, _, positional, _, _ = _connections(s, pos, closing)
-        if positional:
-            positional_parameters = True
-            parameters = {str(index): s.frag(a, b) for index, (a, b) in enumerate(s.split(pos + 1, closing))}
-        else:
-            parameters = connections
+        if not s.structure_only:
+            connections, _, positional, _, _ = _connections(s, pos, closing)
+            if positional:
+                positional_parameters = True
+                parameters = {str(index): s.frag(a, b) for index, (a, b) in enumerate(s.split(pos + 1, closing))}
+            else:
+                parameters = connections
         pos = closing + 1
     param_end = pos
     instances = []
@@ -383,7 +400,10 @@ def _candidate(s, start, stop, scopes, loops):
         if pos >= stop or t[pos] != "(":
             return None
         opening, closing = pos, s.pairs[pos]
-        connections, spans, positional, wildcard, shorthand = _connections(s, opening, closing)
+        if s.structure_only:
+            connections, spans, positional, wildcard, shorthand = {}, {}, False, False, set()
+        else:
+            connections, spans, positional, wildcard, shorthand = _connections(s, opening, closing)
         instances.append(Instance(module=t[start], name=name, start=s.a[name_pos], end=s.b[closing],
                                   type_start=s.a[start], type_end=s.b[start], open=s.a[opening],
                                   close=s.a[closing], connections=connections, connection_spans=spans,
@@ -515,7 +535,7 @@ def _body(s, module, first, last):
                 continue
             if word in ("parameter", "localparam", "genvar"):
                 after = s.semi(pos, stop)
-                if word != "genvar":
+                if word != "genvar" and not s.structure_only:
                     if scopes:
                         module.unsafe.append("generate-local parameters are not elaborated")
                     else:
@@ -552,6 +572,9 @@ def _body(s, module, first, last):
                 continue
             if word in DIRECTIONS or word in KINDS or word in UNSUPPORTED_KINDS:
                 after = s.semi(pos, stop)
+                if s.structure_only:
+                    pos = after
+                    continue
                 if scopes:
                     module.unsafe.append("generate-local signal declarations are not supported")
                 else:
@@ -562,7 +585,8 @@ def _body(s, module, first, last):
                 continue
             if word in ("assign", "deassign", "force", "release"):
                 after = s.semi(pos, stop)
-                module.driven.update(_driven(s, pos, after))
+                if not s.structure_only:
+                    module.driven.update(_driven(s, pos, after))
                 pos = after
                 continue
             if word in ("defparam", "bind"):
@@ -581,8 +605,9 @@ def _body(s, module, first, last):
                 # Typedef-backed declarations are retained with a fail-closed flag.
                 if pos + 1 < stop and IDENT.fullmatch(t[pos + 1]):
                     after = s.semi(pos, stop)
-                    for signal in _declarations(s, pos, after - 1):
-                        add_signal(signal)
+                    if not s.structure_only:
+                        for signal in _declarations(s, pos, after - 1):
+                            add_signal(signal)
                     pos = after
                     continue
             if word in ("(", "[", "{"):
@@ -594,8 +619,8 @@ def _body(s, module, first, last):
     module.unsafe = list(dict.fromkeys(module.unsafe))
 
 
-def _parse_file(path, raw):
-    s = _Source(path, raw)
+def _parse_file(path, raw, structure_only=False):
+    s = _Source(path, raw, structure_only=structure_only)
     t, modules, pos = s.t, [], 0
     # A conditional around a module also changes the design and must be visible.
     conditional_directives = bool(re.search(r"(?m)^[ \t]*`(?:ifdef|ifndef|elsif|else|endif)\b", HIDDEN.sub(lambda m: _blank(m.group()), raw)))
@@ -613,12 +638,15 @@ def _parse_file(path, raw):
         s.module = name
         pos += 1
         parameters = {}
+        while pos < len(t) and t[pos] == "import":
+            pos = s.semi(pos, len(t))
         if pos < len(t) and t[pos] == "#":
             pos += 1
             if pos >= len(t) or t[pos] != "(":
                 s.error(pos, "expected parameter list")
             closing = s.pairs[pos]
-            _parameters(s, pos + 1, closing, parameters)
+            if not structure_only:
+                _parameters(s, pos + 1, closing, parameters)
             pos = closing + 1
         port_open = port_close = None
         port_tokens = None
@@ -641,17 +669,18 @@ def _parse_file(path, raw):
             if t[after + 1] != name:
                 s.error(after + 1, "endmodule label differs from module name")
             after += 2
-        ansi = bool(port_tokens and any(word in DIRECTIONS for word in t[port_tokens[0]:port_tokens[1]]))
+        ansi = bool(port_tokens and (
+            any(word in DIRECTIONS for word in t[port_tokens[0]:port_tokens[1]]) or
+            any(sum(bool(IDENT.fullmatch(t[i])) for i in _surface(s, a, b)) > 1
+                or (a < b and t[a].startswith("`")) for a, b in s.split(*port_tokens))))
         module = Module(name, path, raw, s.a[start], s.b[after - 1], s.a[name_pos], s.b[name_pos],
                         header_end, port_open, port_close, header_end, s.a[end], ansi,
                         parameters=parameters)
         if conditional_directives:
             module.unsafe.append("conditional preprocessing directives require elaboration")
-        if port_tokens:
+        if port_tokens and not structure_only:
             if ansi:
                 for signal in _declarations(s, *port_tokens):
-                    if signal.name in module.ports:
-                        s.error(name_pos, "duplicate port {}".format(signal.name))
                     module.ports[signal.name] = signal
                     module.signals[signal.name] = signal
             else:
@@ -659,10 +688,7 @@ def _parse_file(path, raw):
                     if a == b:
                         continue
                     if b - a != 1 or not IDENT.fullmatch(t[a]):
-                        module.unsafe.append("unsupported non-ANSI port expression")
                         continue
-                    if t[a] in module.ports:
-                        s.error(a, "duplicate port {}".format(t[a]))
                     signal = Signal(t[a])
                     module.ports[signal.name] = signal
                     module.signals[signal.name] = signal
@@ -712,8 +738,13 @@ def _mark_child_drivers(design):
 
 
 class Design:
-    """Scan a source tree; ``texts`` overlays raw relative-path source strings."""
-    def __init__(self, root, texts=None):
+    """Scan source; structure_only skips interface, signal, and driver analysis.
+
+    The default retains the strict information required by the editing engine.
+    ``texts`` overlays raw relative-path source strings in either mode.
+    """
+    def __init__(self, root, texts=None, structure_only=False):
+        self.structure_only = structure_only
         self.root = Path(root).resolve()
         if not self.root.is_dir():
             raise RTLException("RTL source root is not a directory: {}".format(root))
@@ -749,13 +780,15 @@ class Design:
                 self.texts[normalized] = value
         self.modules = {}
         for relative, raw in sorted(self.texts.items()):
-            for module in step("parse RTL file {}".format(relative), _parse_file, relative, raw):
+            for module in step("parse RTL file {}".format(relative), _parse_file, relative, raw,
+                               structure_only=structure_only):
                 if module.name in self.modules:
                     old = self.modules[module.name]
                     raise RTLException("duplicate module {!r} in {} and {}".format(module.name, old.path, relative))
                 self.modules[module.name] = module
         if not self.modules:
             raise RTLException("no module definitions found in {}".format(self.root))
-        _mark_child_drivers(self)
+        if not structure_only:
+            _mark_child_drivers(self)
         referenced = {instance.module for module in self.modules.values() for instance in module.instances}
         self.roots = sorted(set(self.modules) - referenced)

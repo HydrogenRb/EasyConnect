@@ -129,6 +129,53 @@ class EasyConnectTests(unittest.TestCase):
             self.assertIn(instance, result.stdout)
         self.assertEqual(self.rtl_snapshot(), baseline)
 
+    def test_map_does_not_validate_duplicate_port_lists(self):
+        for ports in ("input a, input a", "a, a", "bus_if.master a, bus_if.slave b"):
+            with self.subTest(ports=ports):
+                self.design("module top(" + ports + "); Leaf u(.a(), .a()); endmodule\nmodule Leaf; endmodule\n")
+                baseline = self.snapshot()
+                result = json.loads(self.run_cli("map", "--top", "top").stdout)
+                self.assertEqual([n["path"] for n in result["instances"]], ["top", "top.u"])
+                self.assertNotIn("ports", result["modules"]["top"])
+                self.assertEqual(self.snapshot(), baseline)
+
+    def test_map_ignores_macro_alternative_interfaces_and_bindings(self):
+        self.design("""module top (
+  input clk,
+`ifdef WIDE
+  input [31:0] data,
+`else
+  input [7:0] data,
+`endif
+  bus_if.host a, bus_if.device b
+);
+Leaf #(.W(8), .W(16)) u(
+`ifdef WIDE
+  .data(data)
+`else
+  .data(data)
+`endif
+);
+endmodule
+module Leaf; endmodule
+""")
+        baseline = self.snapshot()
+        result = json.loads(self.run_cli("map", "--top", "top").stdout)
+        self.assertIn("top.u", [n["path"] for n in result["instances"]])
+        self.assertEqual(self.snapshot(), baseline)
+
+    def test_add_does_not_validate_existing_interface_lists(self):
+        baseline = self.design("""
+module top(input a); Src s(.a(a), .a(a)); Dst d(); endmodule
+module Src(input a, input a); wire data; endmodule
+module Dst(); wire received; endmodule
+""")
+        self.add("top.s.data", "top.d.received", name="opaque")
+        self.assertIn("input a, input a", self.rtl())
+        self.assertIn(".a(a), .a(a)", self.rtl())
+        self.run_cli("remove", "opaque")
+        self.assertEqual(self.rtl_snapshot(), baseline)
+
     def test_ansi_add_list_remove_restores_exact_original_bytes(self):
         baseline = self.fixture()
         self.add(name="fifo")

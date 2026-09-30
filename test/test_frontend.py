@@ -13,6 +13,68 @@ class FrontendTests(unittest.TestCase):
         self.addCleanup(temp.cleanup)
         return Design(temp.name, {"design.v": text})
 
+    def test_multiple_interface_modports_use_port_names_not_type_names(self):
+        raw = """module A (
+  bus_if.master m0, m1,
+  bus_if.slave s0,
+  bus_if.master m2 [0:1],
+  input logic clk
+);
+wire [7:0] payload;
+endmodule
+"""
+        module = self.design(raw).modules["A"]
+        self.assertEqual(list(module.ports), ["m0", "m1", "s0", "m2", "clk"])
+        self.assertEqual(module.ports["m0"].kind, "bus_if.master")
+        self.assertEqual(module.ports["m1"].kind, "bus_if.master")
+        self.assertEqual(module.ports["m2"].unpacked, "[0:1]")
+        self.assertTrue(module.ansi)
+        self.assertFalse(module.unsafe)
+        self.assertEqual(module.text, raw)
+
+    def test_interface_only_and_generic_interface_headers_are_ansi(self):
+        for ports in ("bus_if.master a, b, bus_if.slave c", "bus_if a, b, bus_if c", "interface a, b, interface c"):
+            with self.subTest(ports=ports):
+                module = self.design("module A(" + ports + "); endmodule").modules["A"]
+                self.assertTrue(module.ansi)
+                self.assertEqual(list(module.ports), ["a", "b", "c"])
+                self.assertFalse(module.unsafe)
+
+    def test_existing_duplicate_port_and_binding_lists_are_not_validated(self):
+        for ports in ("input a, input a", "a, a"):
+            with self.subTest(ports=ports):
+                raw = "module A(" + ports + "); B b(.x(a), .x(a)); endmodule"
+                module = self.design(raw).modules["A"]
+                self.assertEqual(module.text, raw)
+                self.assertEqual(module.instances[0].name, "b")
+
+    def test_map_mode_skips_declarations_connections_and_driver_analysis(self):
+        raw = """module A #(parameter N=2) (bus_if.master a, bus_if.slave b, input a);
+wire [`WIDTH-1:0] signal;
+assign signal='0;
+for(genvar i=0;i<N;i++) begin:g
+  Leaf #(.W(8), .W(16)) u(.p(signal), .p(signal));
+end
+endmodule
+"""
+        with tempfile.TemporaryDirectory() as directory:
+            with patch("easyconnect.rtl._declarations", side_effect=AssertionError("declaration parsing")), \
+                 patch("easyconnect.rtl._connections", side_effect=AssertionError("connection parsing")), \
+                 patch("easyconnect.rtl._parameters", side_effect=AssertionError("parameter parsing")), \
+                 patch("easyconnect.rtl._mark_child_drivers", side_effect=AssertionError("driver checking")):
+                module = Design(directory, {"design.v": raw}, structure_only=True).modules["A"]
+            self.assertEqual([inst.full_name for inst in module.instances], ["g[i].u"])
+            self.assertEqual(module.ports, {})
+            self.assertEqual(module.signals, {})
+            self.assertEqual(module.driven, set())
+
+    def test_qualified_type_widths_keep_declarator_names(self):
+        module = self.design("module A(input pkg::word_t a, b, input logic [3:0] c); endmodule").modules["A"]
+        self.assertEqual(list(module.ports), ["a", "b", "c"])
+        self.assertEqual(module.ports["a"].kind, "pkg::word_t")
+        self.assertEqual(module.ports["b"].kind, "pkg::word_t")
+        self.assertEqual(module.ports["c"].width, "[3:0]")
+
     def test_ansi_grouped_macro_multidimensional(self):
         raw = """`include "widths.vh"
 module A # (parameter W=8) (
