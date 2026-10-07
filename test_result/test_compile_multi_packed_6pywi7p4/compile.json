@@ -1,0 +1,11 @@
+{
+  "compiler": "slang 11.0.0",
+  "top": "TOP",
+  "files": 4,
+  "errors": 0,
+  "warnings": 1,
+  "error_codes": {},
+  "error_records": [],
+  "diagnostics": "test_result\\test_compile_multi_packed_6pywi7p4\\TOP.v:11:15: warning: implicit conversion from 'bit[31:0]' to 'logic[7:0][3:0]' [-Wpacked-array-conv]\n        .recv({((8) * (4)){1'b0}})\n              ^~~~~~~~~~~~~~~~~~~\n",
+  "passed": true
+}

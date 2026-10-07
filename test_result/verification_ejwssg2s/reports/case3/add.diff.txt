@@ -1,0 +1,100 @@
+add c0001
+c0001: case3_engine_top/u_dma/u_desc_fetch.ec_debug → case3_engine_top/u_cfg.ec_debug_in；转向/公共作用域 case3_engine_top
+定义级影响: 修改路径上的共用 module 会作用于该 module 的所有实例；不统计循环展开数量
+case3_dma_desc_fetch.ec_debug 本次新建、待用户驱动
+源码引用影响 case3_config_regs: case3_engine_top.u_cfg
+源码引用影响 case3_dma_desc_fetch: case3_dma_engine.u_desc_fetch
+源码引用影响 case3_dma_engine: case3_engine_top.u_dma
+--- C:\Users\HRb\HydrogenRb\Work\Tech\Agent\1 Easy_connect\test_result\verification_ejwssg2s\cases\case3\rtl\top\case3_engine_top.v
++++ C:\Users\HRb\HydrogenRb\Work\Tech\Agent\1 Easy_connect\test_result\verification_ejwssg2s\cases\case3\rtl\top\case3_engine_top.v
+@@ -25,6 +25,8 @@
+     output wire                        PERF_BUSY,
+     output wire                        ENGINE_IDLE
+ );
++    wire [8 -1:0] w_ec_debug; // EasyConnect 1.0 验收
++
+ 
+     parameter ENGINE_ID   = 0;
+     parameter ENGINE_PIPE = `C3_PIPE_STAGE;
+@@ -153,8 +155,10 @@
+         .SP_C_WEN   (sp_c_wen),
+         .SP_C_ADDR  (sp_c_addr),
+         .SP_C_D     (sp_c_d),
+-        .SP_C_Q     (sp_c_q)
+-    );
++        .SP_C_Q     (sp_c_q),
++    
++        .ec_debug(w_ec_debug) // EasyConnect 1.0 验收
++);
+ 
+     // 配置寄存器组
+     case3_config_regs u_cfg (
+@@ -173,7 +177,9 @@
+         .CFG_BASE  (cfg_base),
+         .CFG_GO    (cfg_go),
+         .CFG_BUSY  (cfg_busy),
+-        .CFG_CLK   (cfg_clk)
+-    );
++        .CFG_CLK   (cfg_clk),
++    
++        .ec_debug_in(w_ec_debug) // EasyConnect 1.0 验收
++);
+ 
+ endmodule
+
+--- C:\Users\HRb\HydrogenRb\Work\Tech\Agent\1 Easy_connect\test_result\verification_ejwssg2s\cases\case3\rtl\dma\case3_dma_engine.v
++++ C:\Users\HRb\HydrogenRb\Work\Tech\Agent\1 Easy_connect\test_result\verification_ejwssg2s\cases\case3\rtl\dma\case3_dma_engine.v
+@@ -25,7 +25,9 @@
+     output wire                          SP_C_WEN,
+     output wire [`C3_SCRATCH_ADDR_W-1:0] SP_C_ADDR,
+     output wire [`C3_SCRATCH_DATA_W-1:0] SP_C_D,
+-    input  wire [`C3_SCRATCH_DATA_W-1:0] SP_C_Q
++    input  wire [`C3_SCRATCH_DATA_W-1:0] SP_C_Q,
++
++    output wire [8 -1:0] ec_debug // EasyConnect 1.0 验收
+ );
+ 
+     parameter DMA_CHAN   = 0;
+@@ -98,8 +100,10 @@
+         .DESC_VALID  (desc_valid_w),
+         .DESC_READY  (desc_ready_w),
+         .DESC_ERR    (desc_err_w),
+-        .FETCH_IDLE  (fetch_idle_w)
+-    );
++        .FETCH_IDLE  (fetch_idle_w),
++    
++        .ec_debug(ec_debug) // EasyConnect 1.0 验收
++);
+ 
+     case3_sync_fifo u_tx_fifo (
+         .CLK        (CLK),
+
+--- C:\Users\HRb\HydrogenRb\Work\Tech\Agent\1 Easy_connect\test_result\verification_ejwssg2s\cases\case3\rtl\dma\case3_dma_desc_fetch.v
++++ C:\Users\HRb\HydrogenRb\Work\Tech\Agent\1 Easy_connect\test_result\verification_ejwssg2s\cases\case3\rtl\dma\case3_dma_desc_fetch.v
+@@ -18,7 +18,9 @@
+     output wire                    DESC_VALID,
+     output wire                    DESC_READY,
+     output wire                    DESC_ERR,
+-    output wire                    FETCH_IDLE
++    output wire                    FETCH_IDLE,
++
++    output wire [8 -1:0] ec_debug // EasyConnect 1.0 验收
+ );
+ 
+     parameter FETCH_LAT = `C3_PIPE_STAGE;
+
+--- C:\Users\HRb\HydrogenRb\Work\Tech\Agent\1 Easy_connect\test_result\verification_ejwssg2s\cases\case3\rtl\cfg\case3_config_regs.v
++++ C:\Users\HRb\HydrogenRb\Work\Tech\Agent\1 Easy_connect\test_result\verification_ejwssg2s\cases\case3\rtl\cfg\case3_config_regs.v
+@@ -23,7 +23,9 @@
+     output wire [`C3_ADDR_W-1:0]      CFG_BASE,
+     output wire                       CFG_GO,
+     output wire                       CFG_BUSY,
+-    output wire                       CFG_CLK
++    output wire                       CFG_CLK,
++
++    input wire [8 -1:0] ec_debug_in // EasyConnect 1.0 验收
+ );
+ 
+     parameter CFG_BANK_ID = 0;
+
+提交完成：4 个 RTL 文件；连接 ID c0001。RTL 编译需要单独验证。

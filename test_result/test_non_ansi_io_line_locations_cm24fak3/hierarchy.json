@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "view": "source_hierarchy",
+  "elaborated": false,
+  "frontend": {
+    "name": "EasyConnect",
+    "version": "1.0"
+  },
+  "input_config": {
+    "rtl_folder": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_non_ansi_io_line_locations_cm24fak3",
+    "top": "TOP",
+    "files": [
+      "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_non_ansi_io_line_locations_cm24fak3\\TOP.v"
+    ],
+    "include_dirs": [],
+    "defines": {}
+  },
+  "roots": [
+    "TOP"
+  ],
+  "modules": {
+    "TOP": {
+      "file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_non_ansi_io_line_locations_cm24fak3\\TOP.v",
+      "start_line": 1,
+      "end_line": 4,
+      "port_start_line": 2,
+      "port_end_line": 3,
+      "instantiations": []
+    }
+  },
+  "sources": {
+    "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_non_ansi_io_line_locations_cm24fak3\\TOP.v": {
+      "sha256": "9bf1641a073b889e12ce5fcb0faf54bde67cca66490fd14ab1cfa0c8340e9a31",
+      "encoding": "utf-8"
+    }
+  },
+  "note": "Source references only; for/generate are not identified or expanded. style/status are normal."
+}

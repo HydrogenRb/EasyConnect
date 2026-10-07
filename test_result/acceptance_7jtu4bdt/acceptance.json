@@ -1,0 +1,26 @@
+[
+  {
+    "case": 1,
+    "modules": 36,
+    "instances": 46,
+    "html": "passed",
+    "add_mv_rm": "passed",
+    "rtl_restored": true
+  },
+  {
+    "case": 2,
+    "modules": 50,
+    "instances": 126,
+    "html": "passed",
+    "add_mv_rm": "passed",
+    "rtl_restored": true
+  },
+  {
+    "case": 3,
+    "modules": 37,
+    "instances": 72,
+    "html": "passed",
+    "add_mv_rm": "passed",
+    "rtl_restored": true
+  }
+]

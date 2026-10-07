@@ -1,0 +1,23 @@
+test_compile_ancestor_source (__main__.CompilerTests) ... ok
+test_compile_ancestor_target (__main__.CompilerTests) ... ok
+test_compile_cross_layer (__main__.CompilerTests) ... ok
+test_compile_existing_internal_target (__main__.CompilerTests) ... ok
+test_compile_existing_reg_source (__main__.CompilerTests) ... ok
+test_compile_fanout (__main__.CompilerTests) ... ok
+test_compile_local (__main__.CompilerTests) ... ok
+test_compile_multi_packed (__main__.CompilerTests) ... ok
+test_compile_mv (__main__.CompilerTests) ... ok
+test_compile_no_ports (__main__.CompilerTests) ... ok
+test_compile_non_ansi (__main__.CompilerTests) ... ok
+test_compile_parameter_override (__main__.CompilerTests) ... ok
+test_compile_part_select (__main__.CompilerTests) ... ok
+test_compile_rm (__main__.CompilerTests) ... ok
+test_compile_same_type_instances (__main__.CompilerTests) ... ok
+test_compile_selected_source (__main__.CompilerTests) ... ok
+test_compile_selected_target (__main__.CompilerTests) ... ok
+test_compile_user_driven_source_rm (__main__.CompilerTests) ... ok
+
+----------------------------------------------------------------------
+Ran 18 tests in 1.859s
+
+OK

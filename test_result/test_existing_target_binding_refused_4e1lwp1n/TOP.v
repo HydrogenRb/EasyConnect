@@ -1,0 +1,5 @@
+module TOP (input wire clk);
+ MID U_MID (.clk(clk));
+ DST U_DST (.clk(clk), .recv(clk));
+ DST U_UNUSED (.clk(clk));
+endmodule

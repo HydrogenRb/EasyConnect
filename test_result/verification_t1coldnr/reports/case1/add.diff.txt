@@ -1,0 +1,143 @@
+add c0001
+c0001: case1_soc_top/u_cpu_m0/u_dma/u_fetch[gc].ec_debug[gc] → case1_soc_top/u_perf_mon.ec_debug_in；转向/公共作用域 case1_soc_top
+定义级影响: 修改路径上的共用 module 会作用于该 module 的所有实例；不统计循环展开数量
+case1_dma_desc_fetch.ec_debug 本次新建、待用户驱动
+未选位置 case1_soc_top.u_dma_m0.ec_debug：显式悬空
+源码引用影响 case1_ahb_master_wrap: case1_soc_top.u_cpu_m0, case1_soc_top.u_dma_m0
+源码引用影响 case1_dma_desc_fetch: case1_dma_engine.u_fetch[gc]
+源码引用影响 case1_dma_engine: case1_ahb_master_wrap.u_dma
+源码引用影响 case1_perf_monitor: case1_soc_top.u_perf_mon
+--- C:\Users\HRb\HydrogenRb\Work\Tech\Agent\1 Easy_connect\test_result\verification_t1coldnr\cases\case1\rtl\top\case1_soc_top.v
++++ C:\Users\HRb\HydrogenRb\Work\Tech\Agent\1 Easy_connect\test_result\verification_t1coldnr\cases\case1\rtl\top\case1_soc_top.v
+@@ -23,6 +23,8 @@
+     output wire                          MON_IDLE,
+     output wire [`C1_MON_CNT_W-1:0]      DBG_CREDIT_STAT
+ );
++    wire [8 -1:0] w_ec_debug; // EasyConnect 1.0 验收
++
+ 
+     //------------------------------------------------------------------
+     // 主机 0（CPU）AHB-Lite 端口
+@@ -104,8 +106,10 @@
+         .HRESP           (m0_hresp),
+         .HRDATA          (m0_hrdata),
+         .TXN_CNT         (m0_txn_cnt),
+-        .BUSY            (m0_busy)
+-    );
++        .BUSY            (m0_busy),
++    
++        .ec_debug(w_ec_debug) // EasyConnect 1.0 验收
++);
+ 
+     //------------------------------------------------------------------
+     // DMA 主机（同一 master wrap 模块，不同实例名；无 tracker 分支）
+@@ -131,8 +135,10 @@
+         .HRESP           (m1_hresp),
+         .HRDATA          (m1_hrdata),
+         .TXN_CNT         (m1_txn_cnt),
+-        .BUSY            (m1_busy)
+-    );
++        .BUSY            (m1_busy),
++    
++        .ec_debug() // EasyConnect 1.0 验收
++);
+ 
+     //------------------------------------------------------------------
+     // AHB 互连（内含 decoder / credit 通道 / slave mux / APB 桥子树）
+@@ -191,8 +197,10 @@
+         .XBAR_IDLE        (xbar_idle),
+         .MON_TXN_CNT      (mon_txn_cnt),
+         .MON_IDLE         (MON_IDLE),
+-        .DBG_CREDIT_STAT  (DBG_CREDIT_STAT)
+-    );
++        .DBG_CREDIT_STAT  (DBG_CREDIT_STAT),
++    
++        .ec_debug_in(w_ec_debug) // EasyConnect 1.0 验收
++);
+ 
+     assign MON_TXN_CNT = mon_txn_cnt;
+ 
+
+--- C:\Users\HRb\HydrogenRb\Work\Tech\Agent\1 Easy_connect\test_result\verification_t1coldnr\cases\case1\rtl\ahb\case1_ahb_master_wrap.v
++++ C:\Users\HRb\HydrogenRb\Work\Tech\Agent\1 Easy_connect\test_result\verification_t1coldnr\cases\case1\rtl\ahb\case1_ahb_master_wrap.v
+@@ -31,7 +31,9 @@
+     input  wire [`C1_AHB_HRESP_W-1:0]    HRESP,
+     input  wire [`C1_AHB_DATA_W-1:0]     HRDATA,
+     output wire [`C1_MON_CNT_W-1:0]      TXN_CNT,
+-    output wire                          BUSY
++    output wire                          BUSY,
++
++    output wire [8 -1:0] ec_debug // EasyConnect 1.0 验收
+ );
+ 
+     // IS_CPU = 1 时挂 tracker 链，= 0 时为 DMA 主机
+@@ -138,8 +140,10 @@
+                 .REQ_STRB        (dma_strb),
+                 .REQ_DONE        (txn_done_w),
+                 .DESC_CNT        (dma_desc_cnt),
+-                .DMA_BUSY        (dma_busy)
+-            );
++                .DMA_BUSY        (dma_busy),
++            
++        .ec_debug(ec_debug) // EasyConnect 1.0 验收
++);
+ 
+             assign req_addr  = dma_addr;
+             assign req_write = dma_write;
+
+--- C:\Users\HRb\HydrogenRb\Work\Tech\Agent\1 Easy_connect\test_result\verification_t1coldnr\cases\case1\rtl\dma\case1_dma_engine.v
++++ C:\Users\HRb\HydrogenRb\Work\Tech\Agent\1 Easy_connect\test_result\verification_t1coldnr\cases\case1\rtl\dma\case1_dma_engine.v
+@@ -26,7 +26,9 @@
+     output wire [`C1_AHB_STRB_W-1:0]     REQ_STRB,
+     input  wire                          REQ_DONE,
+     output wire [`C1_MON_CNT_W-1:0]      DESC_CNT,
+-    output wire                          DMA_BUSY
++    output wire                          DMA_BUSY,
++
++    output wire [8 -1:0] ec_debug // EasyConnect 1.0 验收
+ );
+ 
+     parameter CH_NUM     = `C1_DMA_CH_NUM;
+@@ -70,8 +72,10 @@
+                 .FETCH_BUSY    (ch_fetch_busy[gc]),
+                 .CREDIT_IN     (CREDIT_IN),
+                 .CREDIT_VALID  (CREDIT_VALID),
+-                .CREDIT_ISSUED (ch_credit_issued[gc])
+-            );
++                .CREDIT_ISSUED (ch_credit_issued[gc]),
++            
++        .ec_debug(ec_debug[gc]) // EasyConnect 1.0 验收
++);
+         end
+     endgenerate
+ 
+
+--- C:\Users\HRb\HydrogenRb\Work\Tech\Agent\1 Easy_connect\test_result\verification_t1coldnr\cases\case1\rtl\dma\case1_dma_desc_fetch.v
++++ C:\Users\HRb\HydrogenRb\Work\Tech\Agent\1 Easy_connect\test_result\verification_t1coldnr\cases\case1\rtl\dma\case1_dma_desc_fetch.v
+@@ -21,7 +21,9 @@
+     output wire                          FETCH_BUSY,
+     input  wire [`C1_CR_CNT_W-1:0]       CREDIT_IN,
+     input  wire                          CREDIT_VALID,
+-    output wire [`C1_CR_CNT_W-1:0]       CREDIT_ISSUED
++    output wire [`C1_CR_CNT_W-1:0]       CREDIT_ISSUED,
++
++    output wire ec_debug // EasyConnect 1.0 验收
+ );
+ 
+     parameter DESC_DEPTH    = `C1_CR_RET_BUF_DEPTH;
+
+--- C:\Users\HRb\HydrogenRb\Work\Tech\Agent\1 Easy_connect\test_result\verification_t1coldnr\cases\case1\rtl\monitor\case1_perf_monitor.v
++++ C:\Users\HRb\HydrogenRb\Work\Tech\Agent\1 Easy_connect\test_result\verification_t1coldnr\cases\case1\rtl\monitor\case1_perf_monitor.v
+@@ -24,7 +24,9 @@
+     input  wire                                        XBAR_IDLE,
+     output wire [`C1_MON_CNT_W-1:0]                    MON_TXN_CNT,
+     output wire                                        MON_IDLE,
+-    output wire [`C1_MON_CNT_W-1:0]                    DBG_CREDIT_STAT
++    output wire [`C1_MON_CNT_W-1:0]                    DBG_CREDIT_STAT,
++
++    input wire [8 -1:0] ec_debug_in // EasyConnect 1.0 验收
+ );
+ 
+     parameter EVT_FIFO_DEPTH = `C1_CR_RET_BUF_DEPTH;
+
+提交完成：5 个 RTL 文件；连接 ID c0001。RTL 编译需要单独验证。

@@ -1,0 +1,11 @@
+{
+  "compiler": "slang 11.0.0",
+  "top": "TOP",
+  "files": 4,
+  "errors": 0,
+  "warnings": 0,
+  "error_codes": {},
+  "error_records": [],
+  "diagnostics": "",
+  "passed": true
+}

@@ -1,0 +1,11 @@
+{
+  "compiler": "slang 11.0.0",
+  "top": "TOP",
+  "files": 4,
+  "errors": 0,
+  "warnings": 1,
+  "error_codes": {},
+  "error_records": [],
+  "diagnostics": "test_result\\test_compile_same_type_instances_dltttxu0\\TOP.v:13:10: warning: output port 'sig' is explicitly connected to nothing [-Wempty-output-connection]\n        .sig()\n         ^~~\n",
+  "passed": true
+}

@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0",
+  "view": "source_hierarchy",
+  "elaborated": false,
+  "frontend": {
+    "name": "EasyConnect",
+    "version": "1.0"
+  },
+  "input_config": {
+    "rtl_folder": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_conditionals_select_one_definition_qc87vu3x",
+    "top": "TOP",
+    "files": [
+      "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_conditionals_select_one_definition_qc87vu3x\\TOP.v"
+    ],
+    "include_dirs": [],
+    "defines": {
+      "FLAG": "1"
+    }
+  },
+  "roots": [
+    "TOP"
+  ],
+  "modules": {
+    "TOP": {
+      "file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_conditionals_select_one_definition_qc87vu3x\\TOP.v",
+      "start_line": 2,
+      "end_line": 2,
+      "port_start_line": 2,
+      "port_end_line": 2,
+      "instantiations": []
+    }
+  },
+  "sources": {
+    "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_conditionals_select_one_definition_qc87vu3x\\TOP.v": {
+      "sha256": "8ac3181cc8db95d1edd7df7f0e5a36a4a622aa836d5ec0c8340336a272051903",
+      "encoding": "utf-8"
+    }
+  },
+  "note": "Source references only; for/generate are not identified or expanded. style/status are normal."
+}

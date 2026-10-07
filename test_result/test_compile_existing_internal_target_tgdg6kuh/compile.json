@@ -1,0 +1,22 @@
+{
+  "compiler": "slang 11.0.0",
+  "top": "TOP",
+  "files": 4,
+  "errors": 1,
+  "warnings": 0,
+  "error_codes": {
+    "DiagCode(UsedBeforeDeclared)": 1
+  },
+  "error_records": [
+    {
+      "code": "DiagCode(UsedBeforeDeclared)",
+      "file": "test_result\\test_compile_existing_internal_target_tgdg6kuh\\DST.v",
+      "line": 4,
+      "args": [
+        "recv"
+      ]
+    }
+  ],
+  "diagnostics": "  in instance: TOP.U_DST\ntest_result\\test_compile_existing_internal_target_tgdg6kuh\\DST.v:4:12: error: identifier 'recv' used before its declaration\n    assign recv = ec_c0001_recv_in;\n           ^~~~\ntest_result\\test_compile_existing_internal_target_tgdg6kuh\\DST.v:5:13: note: declared here\n wire [7:0] recv; endmodule\n            ^\n",
+  "passed": false
+}

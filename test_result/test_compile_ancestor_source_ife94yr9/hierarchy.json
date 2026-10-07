@@ -1,0 +1,272 @@
+{
+  "schema_version": "1.0",
+  "view": "source_hierarchy",
+  "elaborated": false,
+  "frontend": {
+    "name": "EasyConnect",
+    "version": "1.0"
+  },
+  "input_config": {
+    "rtl_folder": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_compile_ancestor_source_ife94yr9",
+    "top": "TOP",
+    "files": [
+      "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_compile_ancestor_source_ife94yr9\\DST.v",
+      "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_compile_ancestor_source_ife94yr9\\MID.v",
+      "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_compile_ancestor_source_ife94yr9\\SRC.v",
+      "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_compile_ancestor_source_ife94yr9\\TOP.v"
+    ],
+    "include_dirs": [],
+    "defines": {}
+  },
+  "roots": [
+    "TOP"
+  ],
+  "modules": {
+    "DST": {
+      "file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_compile_ancestor_source_ife94yr9\\DST.v",
+      "start_line": 1,
+      "end_line": 2,
+      "port_start_line": 1,
+      "port_end_line": 1,
+      "instantiations": []
+    },
+    "TOP": {
+      "file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_compile_ancestor_source_ife94yr9\\TOP.v",
+      "start_line": 1,
+      "end_line": 9,
+      "port_start_line": 1,
+      "port_end_line": 1,
+      "instantiations": [
+        {
+          "module": "MID",
+          "instance": "U_MID",
+          "style": "normal",
+          "status": "normal",
+          "start_line": 4,
+          "end_line": 6,
+          "port_start_line": 1,
+          "port_end_line": 3,
+          "parent_port_start_line": 1,
+          "parent_port_end_line": 1,
+          "file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_compile_ancestor_source_ife94yr9\\TOP.v",
+          "module_file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_compile_ancestor_source_ife94yr9\\MID.v",
+          "start_offset": 45,
+          "end_offset": 88,
+          "connection_start_offset": 55,
+          "connection_end_offset": 86,
+          "ordinal": 0,
+          "named_ports": true,
+          "parameter_override": false
+        },
+        {
+          "module": "DST",
+          "instance": "U_DST",
+          "style": "normal",
+          "status": "normal",
+          "start_line": 7,
+          "end_line": 7,
+          "port_start_line": 1,
+          "port_end_line": 1,
+          "parent_port_start_line": 1,
+          "parent_port_end_line": 1,
+          "file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_compile_ancestor_source_ife94yr9\\TOP.v",
+          "module_file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_compile_ancestor_source_ife94yr9\\DST.v",
+          "start_offset": 90,
+          "end_offset": 112,
+          "connection_start_offset": 100,
+          "connection_end_offset": 110,
+          "ordinal": 1,
+          "named_ports": true,
+          "parameter_override": false
+        },
+        {
+          "module": "DST",
+          "instance": "U_UNUSED",
+          "style": "normal",
+          "status": "normal",
+          "start_line": 8,
+          "end_line": 8,
+          "port_start_line": 1,
+          "port_end_line": 1,
+          "parent_port_start_line": 1,
+          "parent_port_end_line": 1,
+          "file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_compile_ancestor_source_ife94yr9\\TOP.v",
+          "module_file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_compile_ancestor_source_ife94yr9\\DST.v",
+          "start_offset": 114,
+          "end_offset": 139,
+          "connection_start_offset": 127,
+          "connection_end_offset": 137,
+          "ordinal": 2,
+          "named_ports": true,
+          "parameter_override": false
+        }
+      ]
+    },
+    "SRC": {
+      "file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_compile_ancestor_source_ife94yr9\\SRC.v",
+      "start_line": 1,
+      "end_line": 4,
+      "port_start_line": 1,
+      "port_end_line": 3,
+      "instantiations": []
+    },
+    "MID": {
+      "file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_compile_ancestor_source_ife94yr9\\MID.v",
+      "start_line": 1,
+      "end_line": 7,
+      "port_start_line": 1,
+      "port_end_line": 3,
+      "instantiations": [
+        {
+          "module": "SRC",
+          "instance": "U_SRC",
+          "style": "normal",
+          "status": "normal",
+          "start_line": 4,
+          "end_line": 6,
+          "port_start_line": 1,
+          "port_end_line": 3,
+          "parent_port_start_line": 1,
+          "parent_port_end_line": 3,
+          "file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_compile_ancestor_source_ife94yr9\\MID.v",
+          "module_file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_compile_ancestor_source_ife94yr9\\SRC.v",
+          "start_offset": 52,
+          "end_offset": 96,
+          "connection_start_offset": 62,
+          "connection_end_offset": 94,
+          "ordinal": 0,
+          "named_ports": true,
+          "parameter_override": false
+        }
+      ]
+    }
+  },
+  "sources": {
+    "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_compile_ancestor_source_ife94yr9\\DST.v": {
+      "sha256": "57c2510cab2259f4c83b79c56524c53fce7177cbb6ed50a2d54492e324280a27",
+      "encoding": "utf-8"
+    },
+    "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_compile_ancestor_source_ife94yr9\\MID.v": {
+      "sha256": "44a46aecd2c76213221d7e89f19625034002d906dd33fdfd61bb34ab14e87345",
+      "encoding": "utf-8"
+    },
+    "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_compile_ancestor_source_ife94yr9\\SRC.v": {
+      "sha256": "854e716bdcfd5a52125e70d10a39b7208eadbbe311e160765af413229c0f918a",
+      "encoding": "utf-8"
+    },
+    "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_compile_ancestor_source_ife94yr9\\TOP.v": {
+      "sha256": "91dc49de66d3f1003c27066a5d015c3a2ce63bd064daa3a12d4883624a0450c0",
+      "encoding": "utf-8"
+    }
+  },
+  "note": "Source references only; for/generate are not identified or expanded. style/status are normal.",
+  "_easyconnect": {
+    "connections": [
+      {
+        "id": "c0001",
+        "src": "TOP.sig",
+        "dst": "SRC.recv",
+        "widths": [
+          "1"
+        ],
+        "comment": "",
+        "src_instance": "TOP",
+        "dst_instance": "TOP/U_MID/U_SRC"
+      }
+    ],
+    "files": {
+      "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_compile_ancestor_source_ife94yr9\\MID.v": {
+        "before": "module MID (input wire clk);\n SRC U_SRC (.clk(clk));\nendmodule\n",
+        "after": "module MID (input wire clk,\n    input wire recv\n);\n SRC U_SRC (.clk(clk),\n        .recv(recv)\n);\nendmodule\n"
+      },
+      "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_compile_ancestor_source_ife94yr9\\SRC.v": {
+        "before": "module SRC (input wire clk);\nendmodule\n",
+        "after": "module SRC (input wire clk,\n    input wire recv\n);\nendmodule\n"
+      },
+      "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_compile_ancestor_source_ife94yr9\\TOP.v": {
+        "before": "module TOP (input wire clk);\n MID U_MID (.clk(clk));\n DST U_DST (.clk(clk));\n DST U_UNUSED (.clk(clk));\nendmodule\n",
+        "after": "module TOP (input wire clk);\n    wire sig;\n\n MID U_MID (.clk(clk),\n        .recv(sig)\n);\n DST U_DST (.clk(clk));\n DST U_UNUSED (.clk(clk));\nendmodule\n"
+      }
+    },
+    "next_id": 2,
+    "new_sources": [
+      {
+        "module": "TOP",
+        "signal": "sig",
+        "shape": [
+          "1"
+        ]
+      }
+    ],
+    "resources": [
+      {
+        "kind": "wire",
+        "module": "TOP",
+        "name": "sig",
+        "generated": true,
+        "owners": [
+          "c0001"
+        ]
+      },
+      {
+        "kind": "port",
+        "module": "MID",
+        "name": "recv",
+        "generated": true,
+        "owners": [
+          "c0001"
+        ]
+      },
+      {
+        "kind": "binding",
+        "module": "TOP",
+        "name": "0.recv",
+        "generated": true,
+        "owners": [
+          "c0001"
+        ]
+      },
+      {
+        "kind": "port",
+        "module": "SRC",
+        "name": "recv",
+        "generated": true,
+        "owners": [
+          "c0001"
+        ]
+      },
+      {
+        "kind": "binding",
+        "module": "MID",
+        "name": "0.recv",
+        "generated": true,
+        "owners": [
+          "c0001"
+        ]
+      }
+    ],
+    "generated_signals": [
+      {
+        "module": "TOP",
+        "signal": "sig",
+        "shape": [
+          "1"
+        ]
+      },
+      {
+        "module": "MID",
+        "signal": "recv",
+        "shape": [
+          "1"
+        ]
+      },
+      {
+        "module": "SRC",
+        "signal": "recv",
+        "shape": [
+          "1"
+        ]
+      }
+    ]
+  }
+}

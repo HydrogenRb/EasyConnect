@@ -1,0 +1,30 @@
+{
+  "compiler": "slang 11.0.0",
+  "top": "TOP",
+  "files": 4,
+  "errors": 2,
+  "warnings": 0,
+  "error_codes": {
+    "DiagCode(UsedBeforeDeclared)": 2
+  },
+  "error_records": [
+    {
+      "code": "DiagCode(UsedBeforeDeclared)",
+      "file": "test_result\\test_compile_local_kszrxhcm\\TOP.v",
+      "line": 2,
+      "args": [
+        "recv"
+      ]
+    },
+    {
+      "code": "DiagCode(UsedBeforeDeclared)",
+      "file": "test_result\\test_compile_local_kszrxhcm\\TOP.v",
+      "line": 2,
+      "args": [
+        "sig"
+      ]
+    }
+  ],
+  "diagnostics": "test_result\\test_compile_local_kszrxhcm\\TOP.v:2:12: error: identifier 'recv' used before its declaration\n    assign recv = sig;\n           ^~~~\ntest_result\\test_compile_local_kszrxhcm\\TOP.v:4:10: note: declared here\n    wire recv;\n         ^\ntest_result\\test_compile_local_kszrxhcm\\TOP.v:2:19: error: identifier 'sig' used before its declaration\n    assign recv = sig;\n                  ^~~\ntest_result\\test_compile_local_kszrxhcm\\TOP.v:6:10: note: declared here\n    wire sig;\n         ^\n",
+  "passed": false
+}

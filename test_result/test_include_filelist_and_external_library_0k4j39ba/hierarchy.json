@@ -1,0 +1,80 @@
+{
+  "schema_version": "1.0",
+  "view": "source_hierarchy",
+  "elaborated": false,
+  "frontend": {
+    "name": "EasyConnect",
+    "version": "1.0"
+  },
+  "input_config": {
+    "rtl_folder": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_include_filelist_and_external_library_0k4j39ba\\rtl",
+    "top": "TOP",
+    "files": [
+      "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_include_filelist_and_external_library_0k4j39ba\\library\\lib.v",
+      "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_include_filelist_and_external_library_0k4j39ba\\rtl\\TOP.v",
+      "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_include_filelist_and_external_library_0k4j39ba\\rtl\\defs.vh"
+    ],
+    "include_dirs": [
+      "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_include_filelist_and_external_library_0k4j39ba\\rtl"
+    ],
+    "defines": {}
+  },
+  "roots": [
+    "TOP"
+  ],
+  "modules": {
+    "LIB": {
+      "file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_include_filelist_and_external_library_0k4j39ba\\library\\lib.v",
+      "start_line": 1,
+      "end_line": 1,
+      "port_start_line": 1,
+      "port_end_line": 1,
+      "instantiations": []
+    },
+    "TOP": {
+      "file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_include_filelist_and_external_library_0k4j39ba\\rtl\\TOP.v",
+      "start_line": 2,
+      "end_line": 2,
+      "port_start_line": 2,
+      "port_end_line": 2,
+      "instantiations": [
+        {
+          "module": "LIB",
+          "instance": "U_L",
+          "style": "normal",
+          "status": "normal",
+          "start_line": 2,
+          "end_line": 2,
+          "port_start_line": 1,
+          "port_end_line": 1,
+          "parent_port_start_line": 2,
+          "parent_port_end_line": 2,
+          "file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_include_filelist_and_external_library_0k4j39ba\\rtl\\TOP.v",
+          "module_file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_include_filelist_and_external_library_0k4j39ba\\library\\lib.v",
+          "start_offset": 40,
+          "end_offset": 55,
+          "connection_start_offset": 47,
+          "connection_end_offset": 53,
+          "ordinal": 0,
+          "named_ports": true,
+          "parameter_override": false
+        }
+      ]
+    }
+  },
+  "sources": {
+    "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_include_filelist_and_external_library_0k4j39ba\\library\\lib.v": {
+      "sha256": "7f9ed2679998c6ba75f4f3ca4a30b750b5cbf9af1aa3f5dfb12c61fd96de23e2",
+      "encoding": "utf-8"
+    },
+    "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_include_filelist_and_external_library_0k4j39ba\\rtl\\TOP.v": {
+      "sha256": "1dccadaa7e418908efcd1d631325b7d4a5a025eefe818c9cd5bb3031c5466297",
+      "encoding": "utf-8"
+    },
+    "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_include_filelist_and_external_library_0k4j39ba\\rtl\\defs.vh": {
+      "sha256": "8eb71adc857d54ea7eca9cdaa97222928b86c2a8befc77873f0c71fdbc10c3e3",
+      "encoding": "utf-8"
+    }
+  },
+  "note": "Source references only; for/generate are not identified or expanded. style/status are normal."
+}

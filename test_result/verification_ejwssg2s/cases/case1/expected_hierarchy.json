@@ -1,0 +1,484 @@
+{
+  "schema_version": "1.0",
+  "view": "expected_hierarchy",
+  "elaborated": false,
+  "frontend": {
+    "name": "verify_cases.py",
+    "version": "1.0"
+  },
+  "input_config": {
+    "source_file": "case1",
+    "top": "case1_soc_top"
+  },
+  "note": "Generate/for instances are listed once, with the genvar in the instance name (u_slot[i]); the real elaborated count is in the per-instance 'times' field when the loop bound is a literal.",
+  "roots": [
+    "case1_soc_top"
+  ],
+  "modules": {
+    "RAM_SP": {
+      "instantiations": []
+    },
+    "RAM_SP_BE": {
+      "instantiations": []
+    },
+    "RAM_DP": {
+      "instantiations": []
+    },
+    "RAM_2P": {
+      "instantiations": []
+    },
+    "case1_soc_top": {
+      "instantiations": [
+        {
+          "module": "case1_ahb_master_wrap",
+          "instance": "u_cpu_m0",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        },
+        {
+          "module": "case1_ahb_master_wrap",
+          "instance": "u_dma_m0",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        },
+        {
+          "module": "case1_ahb_interconnect",
+          "instance": "u_xbar",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case1_perf_monitor",
+          "instance": "u_perf_mon",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case1_ahb_master": {
+      "instantiations": []
+    },
+    "case1_ahb_master_wrap": {
+      "instantiations": [
+        {
+          "module": "case1_cpu_tracker_rv32",
+          "instance": "u_track",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        },
+        {
+          "module": "case1_dma_engine",
+          "instance": "u_dma",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        },
+        {
+          "module": "case1_ahb_master",
+          "instance": "u_issue",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        }
+      ]
+    },
+    "case1_ahb_slave": {
+      "instantiations": []
+    },
+    "case1_ahb_decoder": {
+      "instantiations": []
+    },
+    "case1_ahb_slave_mux": {
+      "instantiations": [
+        {
+          "module": "case1_ahb_slave",
+          "instance": "u_slv[s]",
+          "style": "named+param",
+          "status": "for_generated",
+          "parameter_override": true,
+          "generate_block": "g_slave",
+          "loop_depth": 1,
+          "times": 4
+        },
+        {
+          "module": "case1_ahb_to_apb_bridge",
+          "instance": "u_bridge",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        }
+      ]
+    },
+    "case1_ahb_interconnect": {
+      "instantiations": [
+        {
+          "module": "case1_ahb_decoder",
+          "instance": "u_decoder",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case1_ahb_credit_master",
+          "instance": "u_m_credit[m]",
+          "style": "named+param",
+          "status": "for_generated",
+          "parameter_override": true,
+          "generate_block": "g_m_credit",
+          "loop_depth": 1,
+          "times": 2
+        },
+        {
+          "module": "case1_ahb_credit_slave",
+          "instance": "u_s_credit[s]",
+          "style": "named+param",
+          "status": "for_generated",
+          "parameter_override": true,
+          "generate_block": "g_s_credit_inst",
+          "loop_depth": 1,
+          "times": 4
+        },
+        {
+          "module": "case1_ahb_slave_mux",
+          "instance": "u_slave_mux",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case1_ahb_credit_master": {
+      "instantiations": []
+    },
+    "case1_ahb_credit_slave": {
+      "instantiations": [
+        {
+          "module": "RAM_SP",
+          "instance": "u_outstanding_tbl",
+          "style": "positional",
+          "status": "normal"
+        }
+      ]
+    },
+    "case1_ahb_to_apb_bridge": {
+      "instantiations": [
+        {
+          "module": "case1_apb_mux",
+          "instance": "u_apb_mux",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        }
+      ]
+    },
+    "case1_apb_mux": {
+      "instantiations": [
+        {
+          "module": "case1_apb_credit_pool",
+          "instance": "u_credit_pool",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        }
+      ]
+    },
+    "case1_apb_credit_pool": {
+      "instantiations": [
+        {
+          "module": "case1_sync_fifo",
+          "instance": "u_ret_fifo",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        },
+        {
+          "module": "case1_apb_crossbar",
+          "instance": "u_crossbar",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        }
+      ]
+    },
+    "case1_apb_crossbar": {
+      "instantiations": [
+        {
+          "module": "case1_apb_periph_slot",
+          "instance": "u_slot[s]",
+          "style": "named+param",
+          "status": "for_generated",
+          "parameter_override": true,
+          "generate_block": "g_slot",
+          "loop_depth": 1,
+          "times": 4
+        },
+        {
+          "module": "case1_sync_ff",
+          "instance": "u_ready_sync[s*`C1_CDC_STAGES+k]",
+          "style": "named",
+          "status": "for_generated",
+          "generate_block": "g_ready_sync",
+          "loop_depth": 2,
+          "times": 4
+        },
+        {
+          "module": "case1_apb_cdc",
+          "instance": "u_cdc",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case1_apb_cdc": {
+      "instantiations": [
+        {
+          "module": "case1_sync_ff",
+          "instance": "u_active_ff[s*`C1_CDC_STAGES+k]",
+          "style": "named",
+          "status": "for_generated",
+          "generate_block": "g_active_sync",
+          "loop_depth": 2,
+          "times": 4
+        },
+        {
+          "module": "case1_pulse_sync",
+          "instance": "u_pulse[s]",
+          "style": "positional",
+          "status": "for_generated",
+          "generate_block": "g_pulse_sync",
+          "loop_depth": 1,
+          "times": 4
+        },
+        {
+          "module": "case1_gray_sync",
+          "instance": "u_gray[k]",
+          "style": "positional",
+          "status": "for_generated",
+          "generate_block": "g_gray_sync",
+          "loop_depth": 1,
+          "times": 2
+        }
+      ]
+    },
+    "case1_apb_periph_slot": {
+      "instantiations": [
+        {
+          "module": "case1_apb_regfile",
+          "instance": "u_regfile",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        },
+        {
+          "module": "case1_apb_regfile",
+          "instance": "u_regfile_timer",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        },
+        {
+          "module": "case1_apb_regfile",
+          "instance": "u_regfile_gpio",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        },
+        {
+          "module": "case1_apb_regfile",
+          "instance": "u_regfile_spi",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        },
+        {
+          "module": "RAM_SP",
+          "instance": "u_fifo_ram",
+          "style": "positional",
+          "status": "normal"
+        },
+        {
+          "module": "case1_sync_fifo",
+          "instance": "u_rx_fifo",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        },
+        {
+          "module": "case1_clk_gate",
+          "instance": "u_gate",
+          "style": "positional",
+          "status": "normal"
+        },
+        {
+          "module": "case1_sync_ff",
+          "instance": "u_ready_sync[k]",
+          "style": "positional",
+          "status": "for_generated",
+          "generate_block": "g_ready_sync",
+          "loop_depth": 1,
+          "times": 2
+        }
+      ]
+    },
+    "case1_apb_regfile": {
+      "instantiations": [
+        {
+          "module": "RAM_DP",
+          "instance": "u_reg_mem",
+          "style": "positional",
+          "status": "normal"
+        },
+        {
+          "module": "case1_uart_regs",
+          "instance": "u_uart_regs",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        },
+        {
+          "module": "case1_timer_regs",
+          "instance": "u_timer_regs",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        },
+        {
+          "module": "case1_gpio_regs",
+          "instance": "u_gpio_regs",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        },
+        {
+          "module": "case1_spi_regs",
+          "instance": "u_spi_regs",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        },
+        {
+          "module": "case1_watchdog_regs",
+          "instance": "u_watchdog_regs",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        },
+        {
+          "module": "case1_dma_apb_regs",
+          "instance": "u_dma_apb_regs",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        }
+      ]
+    },
+    "case1_uart_regs": {
+      "instantiations": []
+    },
+    "case1_timer_regs": {
+      "instantiations": []
+    },
+    "case1_gpio_regs": {
+      "instantiations": []
+    },
+    "case1_spi_regs": {
+      "instantiations": []
+    },
+    "case1_watchdog_regs": {
+      "instantiations": []
+    },
+    "case1_dma_apb_regs": {
+      "instantiations": []
+    },
+    "case1_dma_engine": {
+      "instantiations": [
+        {
+          "module": "case1_dma_desc_fetch",
+          "instance": "u_fetch[gc]",
+          "style": "named+param",
+          "status": "for_generated",
+          "parameter_override": true,
+          "generate_block": "g_ch",
+          "loop_depth": 1,
+          "times": 4
+        }
+      ]
+    },
+    "case1_dma_desc_fetch": {
+      "instantiations": [
+        {
+          "module": "RAM_SP",
+          "instance": "u_desc_buf",
+          "style": "positional",
+          "status": "normal"
+        }
+      ]
+    },
+    "case1_perf_monitor": {
+      "instantiations": [
+        {
+          "module": "case1_gray_sync",
+          "instance": "u_dbg_sync[k]",
+          "style": "positional",
+          "status": "for_generated",
+          "generate_block": "g_dbg_sync",
+          "loop_depth": 1,
+          "times": 2
+        },
+        {
+          "module": "case1_cpu_tracker_rv32",
+          "instance": "u_bus_track",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        }
+      ]
+    },
+    "case1_cpu_tracker": {
+      "instantiations": []
+    },
+    "case1_cpu_tracker_rv32": {
+      "instantiations": [
+        {
+          "module": "case1_cpu_tracker",
+          "instance": "u_track_core",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        }
+      ]
+    },
+    "case1_sync_fifo": {
+      "instantiations": [
+        {
+          "module": "RAM_SP_BE",
+          "instance": "u_fifo_mem",
+          "style": "positional",
+          "status": "normal"
+        },
+        {
+          "module": "case1_gray_sync",
+          "instance": "u_gray_sync[k]",
+          "style": "positional",
+          "status": "for_generated",
+          "generate_block": "g_gray_sync",
+          "loop_depth": 1,
+          "times": 2
+        }
+      ]
+    },
+    "case1_gray_sync": {
+      "instantiations": []
+    },
+    "case1_pulse_sync": {
+      "instantiations": []
+    },
+    "case1_sync_ff": {
+      "instantiations": []
+    },
+    "case1_clk_gate": {
+      "instantiations": []
+    }
+  }
+}

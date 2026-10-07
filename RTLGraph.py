@@ -166,6 +166,8 @@ class Module:
     declarations: dict = field(default_factory=dict)
     instances: list = field(default_factory=list)
     parameters: dict = field(default_factory=dict)
+    io_start: object = None
+    io_end: object = None
 
     @property
     def newline(self):
@@ -235,13 +237,13 @@ def parse_file(path, text, processed=None):
             raise EasyConnectError("不支持的 module 声明: %s" % path)
         name = tokens[index].value
         index += 1
-        param_tokens = []
+        param_groups = []
         if index < len(tokens) and tokens[index].value == "#":
             index += 1
             if tokens[index].value != "(":
                 raise EasyConnectError("无法定位参数列表: " + name)
             close = matching[index]
-            param_tokens = tokens[index + 1:close]
+            param_groups.extend(split_tokens(tokens[index + 1:close]))
             index = close + 1
         opening = closing = None
         header_tokens = []
@@ -263,6 +265,8 @@ def parse_file(path, text, processed=None):
         mod = Module(name, str(Path(path).resolve()), text, masked,
                      tokens[start_index].start, tokens[ending].end, header_end,
                      opening, closing, ansi)
+        mod.io_start = opening if opening is not None else mod.start
+        mod.io_end = closing if closing is not None else header_end
         if ansi:
             mod.declarations.update(parse_declarations(header_tokens, text, True))
         scan = body_start
@@ -278,6 +282,9 @@ def parse_file(path, text, processed=None):
                 while finish < ending and tokens[finish].value != ";":
                     finish += 1
                 decls = parse_declarations(tokens[scan:finish], text)
+                if not ansi and value in DIRECTIONS:
+                    if mod.io_start == opening: mod.io_start = tokens[scan].start
+                    mod.io_end = tokens[finish].end
                 for key, decl in decls.items():
                     if key in mod.declarations:
                         previous = mod.declarations[key]
@@ -290,9 +297,9 @@ def parse_file(path, text, processed=None):
                 finish = scan
                 while finish < ending and tokens[finish].value != ";":
                     finish += 1
-                param_tokens.extend(tokens[scan + 1:finish])
+                param_groups.extend(split_tokens(tokens[scan + 1:finish]))
             scan += 1
-        for group in split_tokens(param_tokens):
+        for group in param_groups:
             equal = next((i for i, t in enumerate(group) if t.value == "="), None)
             if equal is not None and equal > 0 and equal + 1 < len(group):
                 mod.parameters[group[equal - 1].value] = text[group[equal + 1].start:group[-1].end]
@@ -411,18 +418,23 @@ class SourceProject:
         self.initial_defines = dict(defines or {})
         self.include_dirs = [str(Path(p).resolve()) for p in include_dirs or []]
         self.texts, self.encodings, self.modules = {}, {}, {}
+        self.file_macros = {}
+        self.compilation_views, self.module_macros = {}, {}
         self.macros = dict(self.initial_defines)
         for file in self.files:
             content, encoding = read_source(file)
             self.texts[file] = texts[file] if texts is not None and file in texts else content
             self.encodings[file] = encoding
         for file in self.files:
-            processed = self.preprocess(file, [])
+            self.preprocess(file, [])
+        for file in self.files:
+            processed = self.compilation_views[file][0]
             for mod in parse_file(file, self.texts[file], processed):
                 if mod.name in self.modules:
                     raise EasyConnectError("重复模块 %s: %s 和 %s；请检查 filelist/条件宏" %
                                            (mod.name, self.modules[mod.name].file, file))
                 self.modules[mod.name] = mod
+                self.module_macros[mod.name] = self.compilation_views[file][1]
         if top not in self.modules:
             raise EasyConnectError("顶层模块不存在: " + top)
         self.filter_instances()
@@ -440,6 +452,7 @@ class SourceProject:
     def preprocess(self, file, ancestry):
         if file in ancestry:
             raise EasyConnectError("循环 include: " + file)
+        self.file_macros.setdefault(file, dict(self.macros))
         text = self.texts[file]
         clean = mask_comments(text)
         result, stack, active, continuation = [], [], True, False
@@ -487,7 +500,14 @@ class SourceProject:
             result.append(original if active else blank(original))
         if stack:
             raise EasyConnectError("条件编译块未闭合: " + file)
-        return "".join(result)
+        processed = "".join(result)
+        previous = self.compilation_views.get(file)
+        has_modules = bool(re.search(r"\bmodule\b", mask_comments(processed, True)))
+        if previous is None or has_modules:
+            if previous and has_modules and re.search(r"\bmodule\b", mask_comments(previous[0], True)) and previous[0] != processed:
+                raise EasyConnectError("同一源码在不同编译宏上下文中包含不同模块定义，1.0 无法可靠编辑: " + file)
+            self.compilation_views[file] = (processed, dict(self.macros))
+        return processed
 
     def filter_instances(self):
         for mod in self.modules.values():
@@ -496,23 +516,39 @@ class SourceProject:
                 inst.ordinal = ordinal
 
     def refresh(self, file):
-        # Re-run the same compilation inputs. This keeps inactive branches masked.
-        rebuilt = SourceProject(self.files, self.top, self.initial_defines, self.include_dirs, self.texts)
-        self.modules, self.macros = rebuilt.modules, rebuilt.macros
+        # Edits change module items, never compilation directives. Reparse the
+        # affected file using its original compilation-unit macro environment.
+        saved = self.macros
+        self.macros = dict(self.file_macros[file])
+        self.compilation_views.pop(file, None)
+        try:
+            processed = self.preprocess(file, [])
+        finally:
+            self.macros = saved
+        replacements = parse_file(file, self.texts[file], processed)
+        retained = {name: mod for name, mod in self.modules.items() if mod.file != file}
+        for mod in replacements:
+            if mod.name in retained: raise EasyConnectError("重复模块: " + mod.name)
+            retained[mod.name] = mod
+            self.module_macros[mod.name] = self.compilation_views[file][1]
+        self.modules = retained
+        self.filter_instances()
 
     def graph(self, rtl_root, state=None):
         modules = {}
         for name, mod in self.modules.items():
-            io_start = mod.line(mod.opening if mod.opening is not None else mod.start)
-            io_end = mod.line(mod.closing if mod.closing is not None else mod.header_end)
+            io_start = mod.line(mod.io_start)
+            io_end = mod.line(mod.io_end)
             records = []
             for inst in mod.instances:
                 child = self.modules[inst.module]
                 records.append({
                     "module": inst.module, "instance": inst.name, "style": "normal", "status": "normal",
                     "start_line": mod.line(inst.start), "end_line": mod.line(inst.end - 1),
-                    "port_start_line": child.line(child.opening if child.opening is not None else child.start),
-                    "port_end_line": child.line(child.closing if child.closing is not None else child.header_end),
+                    "instance_start_line": mod.line(inst.start), "instance_end_line": mod.line(inst.end - 1),
+                    "module_start_line": child.line(child.start), "module_end_line": child.line(child.end - 1),
+                    "port_start_line": child.line(child.io_start),
+                    "port_end_line": child.line(child.io_end),
                     "parent_port_start_line": io_start, "parent_port_end_line": io_end,
                     "file": mod.file, "module_file": child.file,
                     "start_offset": inst.start, "end_offset": inst.end,
@@ -604,7 +640,7 @@ def discover(rtl_folder, filelists=None, include_dirs=None, defines=None):
             found = next((str(p) for p in candidates if p.is_file()), None)
             if found and found not in files: files.append(found)
         index += 1
-    return SourceProject(files, top="" if not files else "__DISCOVERY__", defines=macros, include_dirs=dirs) if False else (files, dirs, macros)
+    return files, dirs, macros
 
 
 def build_graph(rtl_folder, top, output, filelists=None, include_dirs=None, defines=None):

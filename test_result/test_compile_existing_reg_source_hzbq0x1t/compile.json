@@ -1,0 +1,22 @@
+{
+  "compiler": "slang 11.0.0",
+  "top": "TOP",
+  "files": 4,
+  "errors": 1,
+  "warnings": 0,
+  "error_codes": {
+    "DiagCode(UsedBeforeDeclared)": 1
+  },
+  "error_records": [
+    {
+      "code": "DiagCode(UsedBeforeDeclared)",
+      "file": "test_result\\test_compile_existing_reg_source_hzbq0x1t\\SRC.v",
+      "line": 4,
+      "args": [
+        "sig"
+      ]
+    }
+  ],
+  "diagnostics": "test_result\\test_compile_existing_reg_source_hzbq0x1t\\SRC.v:4:31: error: identifier 'sig' used before its declaration\n    assign ec_c0001_sig_out = sig;\n                              ^~~\ntest_result\\test_compile_existing_reg_source_hzbq0x1t\\SRC.v:5:12: note: declared here\n reg [7:0] sig; always @(posedge clk) sig<=8'h55; endmodule\n           ^\n",
+  "passed": false
+}

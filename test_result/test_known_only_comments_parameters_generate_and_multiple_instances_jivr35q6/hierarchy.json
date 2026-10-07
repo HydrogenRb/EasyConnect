@@ -1,0 +1,115 @@
+{
+  "schema_version": "1.0",
+  "view": "source_hierarchy",
+  "elaborated": false,
+  "frontend": {
+    "name": "EasyConnect",
+    "version": "1.0"
+  },
+  "input_config": {
+    "rtl_folder": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_known_only_comments_parameters_generate_and_multiple_instances_jivr35q6",
+    "top": "TOP",
+    "files": [
+      "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_known_only_comments_parameters_generate_and_multiple_instances_jivr35q6\\TOP.v",
+      "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_known_only_comments_parameters_generate_and_multiple_instances_jivr35q6\\sub\\S.sv"
+    ],
+    "include_dirs": [],
+    "defines": {}
+  },
+  "roots": [
+    "TOP"
+  ],
+  "modules": {
+    "TOP": {
+      "file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_known_only_comments_parameters_generate_and_multiple_instances_jivr35q6\\TOP.v",
+      "start_line": 2,
+      "end_line": 9,
+      "port_start_line": 2,
+      "port_end_line": 2,
+      "instantiations": [
+        {
+          "module": "S",
+          "instance": "U_ONE",
+          "style": "normal",
+          "status": "normal",
+          "start_line": 5,
+          "end_line": 5,
+          "port_start_line": 1,
+          "port_end_line": 1,
+          "parent_port_start_line": 2,
+          "parent_port_end_line": 2,
+          "file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_known_only_comments_parameters_generate_and_multiple_instances_jivr35q6\\TOP.v",
+          "module_file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_known_only_comments_parameters_generate_and_multiple_instances_jivr35q6\\sub\\S.sv",
+          "start_offset": 113,
+          "end_offset": 161,
+          "connection_start_offset": 129,
+          "connection_end_offset": 142,
+          "ordinal": 0,
+          "named_ports": true,
+          "parameter_override": true
+        },
+        {
+          "module": "S",
+          "instance": "U_TWO",
+          "style": "normal",
+          "status": "normal",
+          "start_line": 5,
+          "end_line": 5,
+          "port_start_line": 1,
+          "port_end_line": 1,
+          "parent_port_start_line": 2,
+          "parent_port_end_line": 2,
+          "file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_known_only_comments_parameters_generate_and_multiple_instances_jivr35q6\\TOP.v",
+          "module_file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_known_only_comments_parameters_generate_and_multiple_instances_jivr35q6\\sub\\S.sv",
+          "start_offset": 113,
+          "end_offset": 161,
+          "connection_start_offset": 150,
+          "connection_end_offset": 159,
+          "ordinal": 1,
+          "named_ports": true,
+          "parameter_override": true
+        },
+        {
+          "module": "S",
+          "instance": "U_LOOP[i]",
+          "style": "normal",
+          "status": "normal",
+          "start_line": 7,
+          "end_line": 7,
+          "port_start_line": 1,
+          "port_end_line": 1,
+          "parent_port_start_line": 2,
+          "parent_port_end_line": 2,
+          "file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_known_only_comments_parameters_generate_and_multiple_instances_jivr35q6\\TOP.v",
+          "module_file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_known_only_comments_parameters_generate_and_multiple_instances_jivr35q6\\sub\\S.sv",
+          "start_offset": 206,
+          "end_offset": 228,
+          "connection_start_offset": 217,
+          "connection_end_offset": 226,
+          "ordinal": 2,
+          "named_ports": true,
+          "parameter_override": false
+        }
+      ]
+    },
+    "S": {
+      "file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_known_only_comments_parameters_generate_and_multiple_instances_jivr35q6\\sub\\S.sv",
+      "start_line": 1,
+      "end_line": 1,
+      "port_start_line": 1,
+      "port_end_line": 1,
+      "instantiations": []
+    }
+  },
+  "sources": {
+    "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_known_only_comments_parameters_generate_and_multiple_instances_jivr35q6\\TOP.v": {
+      "sha256": "2f776851c4950b220cf7c700a339b2b56ab81e3267c30c0ed873739e679eba92",
+      "encoding": "utf-8"
+    },
+    "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_known_only_comments_parameters_generate_and_multiple_instances_jivr35q6\\sub\\S.sv": {
+      "sha256": "013ad9841daecf9a148e4ff1477596855a778c2daf2884d5c7d6f903d7d9a184",
+      "encoding": "utf-8"
+    }
+  },
+  "note": "Source references only; for/generate are not identified or expanded. style/status are normal."
+}

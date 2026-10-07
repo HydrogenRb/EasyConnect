@@ -1,0 +1,73 @@
+{
+  "schema_version": "1.0",
+  "view": "source_hierarchy",
+  "elaborated": false,
+  "frontend": {
+    "name": "EasyConnect",
+    "version": "1.0"
+  },
+  "input_config": {
+    "rtl_folder": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_guarded_module_in_include_is_discovered_whcbmlai",
+    "top": "TOP",
+    "files": [
+      "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_guarded_module_in_include_is_discovered_whcbmlai\\TOP.v",
+      "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_guarded_module_in_include_is_discovered_whcbmlai\\lib.vh"
+    ],
+    "include_dirs": [],
+    "defines": {}
+  },
+  "roots": [
+    "TOP"
+  ],
+  "modules": {
+    "TOP": {
+      "file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_guarded_module_in_include_is_discovered_whcbmlai\\TOP.v",
+      "start_line": 2,
+      "end_line": 2,
+      "port_start_line": 2,
+      "port_end_line": 2,
+      "instantiations": [
+        {
+          "module": "LIB",
+          "instance": "U_LIB",
+          "style": "normal",
+          "status": "normal",
+          "start_line": 2,
+          "end_line": 2,
+          "port_start_line": 3,
+          "port_end_line": 3,
+          "parent_port_start_line": 2,
+          "parent_port_end_line": 2,
+          "file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_guarded_module_in_include_is_discovered_whcbmlai\\TOP.v",
+          "module_file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_guarded_module_in_include_is_discovered_whcbmlai\\lib.vh",
+          "start_offset": 39,
+          "end_offset": 56,
+          "connection_start_offset": 48,
+          "connection_end_offset": 54,
+          "ordinal": 0,
+          "named_ports": true,
+          "parameter_override": false
+        }
+      ]
+    },
+    "LIB": {
+      "file": "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_guarded_module_in_include_is_discovered_whcbmlai\\lib.vh",
+      "start_line": 3,
+      "end_line": 3,
+      "port_start_line": 3,
+      "port_end_line": 3,
+      "instantiations": []
+    }
+  },
+  "sources": {
+    "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_guarded_module_in_include_is_discovered_whcbmlai\\TOP.v": {
+      "sha256": "8e383caa350f2a3f60411e36a008da1824a49461bf2415bc80007e3dcc5fc6ee",
+      "encoding": "utf-8"
+    },
+    "C:\\Users\\HRb\\HydrogenRb\\Work\\Tech\\Agent\\1 Easy_connect\\test_result\\test_guarded_module_in_include_is_discovered_whcbmlai\\lib.vh": {
+      "sha256": "e6de9a01d325ea1722ea48baf3f142fff1b5a6cf9aa72aaf707a68a017274305",
+      "encoding": "utf-8"
+    }
+  },
+  "note": "Source references only; for/generate are not identified or expanded. style/status are normal."
+}
