@@ -84,6 +84,14 @@ module Dst(); wire [11:0] data; endmodule
         self.assertIn("output wire", output)
         self.assertNotIn("[BITS-1:0] __ec_", output)
 
+    def test_missing_source_names_module_and_declared_signal_hint(self):
+        with self.assertRaisesRegex(ValueError, r"'missing'.*module 'Src'.*Declared names: \[data\]"):
+            self.plan("""
+module top(); Src s(); Dst d(); endmodule
+module Src(); wire [7:0] data; endmodule
+module Dst(); wire received; endmodule
+""", "top.s.missing", "top.d.received")
+
     def test_route_with_multiple_interface_ports_preserves_existing_interfaces(self):
         source = """
 interface bus_if;

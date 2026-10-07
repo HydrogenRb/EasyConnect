@@ -59,7 +59,9 @@ python EasyConnect.py add U_C.fifo_rd U_D.fifo_rd_in --src ./my_rtl --name fifo 
 3. 在公共祖先中声明连接线，将两侧例化接到同一条线上。
 4. 向下经过中间模块时补充 input；最后连接目标信号或创建缺失的目标 input。若目标就是公共祖先且该信号尚未声明，则新建 output 并驱动它，适合向顶层导出信号。
 
-源端、目标端可以使用不同信号名。生成的端口/线网使用连接名称作为前缀，命令结果给出实际处理路径。源信号必须存在；工具不会猜测 FIFO 等业务逻辑，也不会自动生成缺失的逻辑驱动。
+源端、目标端可以使用不同信号名。生成的端口/线网使用连接名称作为前缀，命令结果给出实际处理路径。源端只需要在源实例所属 module 作用域中已有声明（`wire`、`logic`、`reg` 或已有 port），不需要用户预先把它改成 `output`。工具会自动在源 module 增加辅助 `output`，在跨层父 module 增加 `wire`，在目标 module 增加辅助 `input` 并接到目标信号。工具不会猜测 FIFO 等业务逻辑，也不会为一个完全不存在的源信号自动发明驱动。
+
+例如 `core_wrap_0.test_sig` 到 `core_wrap_1.test_sig` 的正确前提是两个 `core_wrap` 实例对应的 module 中都声明了 `test_sig`。如果 `test_sig` 实际是某个 interface 实例的成员，它不属于 `core_wrap` 的直接信号命名空间；应先在 wrapper 中用普通 wire/logic 暴露它，再连接该 wrapper 信号。错误信息会列出工具在源 module 中发现的声明名，帮助区分路径写错、宏隐藏声明和 interface 成员。
 
 ## 增删改命令
 

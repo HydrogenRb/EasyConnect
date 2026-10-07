@@ -35,6 +35,7 @@ Remove-Item Env:EASYCONNECT_SLANG_PATH
 | 预览 | add/remove 的 dry-run 不修改或创建文件 |
 | 明确边界 | concrete generate 选择拒绝、shared generate 输出的多驱动拒绝 |
 | 参数和选择 | 参数覆盖、localparam 链、固定数组元素、packed 选择 unsigned 规则 |
+| 源端语义 | 源信号无需预先声明为 output；工具自动补辅助 output / 父级 wire / target input；缺失源信号诊断包含 module 和已发现声明 |
 | 实例和命名 | 逗号并列实例特化、祖先模块共享、endmodule 标签、端口注释、名称冲突 |
 | 外部驱动 | 已知子模块/CBB 输出、未知 CBB 方向、隐式线网的已有驱动拒绝 |
 | 过程块跳过 | always 家族、initial/final 不调用赋值分析；块后实例仍能找到；连线后 always 原文不变 |

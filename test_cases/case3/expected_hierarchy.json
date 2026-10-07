@@ -1,0 +1,617 @@
+{
+  "schema_version": "1.0",
+  "view": "expected_hierarchy",
+  "elaborated": false,
+  "frontend": {
+    "name": "verify_cases.py",
+    "version": "1.0"
+  },
+  "input_config": {
+    "source_file": "case3",
+    "top": "case3_engine_top"
+  },
+  "note": "Generate/for instances are listed once, with the genvar in the instance name (u_slot[i]); the real elaborated count is in the per-instance 'times' field when the loop bound is a literal.",
+  "roots": [
+    "case3_engine_top"
+  ],
+  "modules": {
+    "RAM_SP": {
+      "instantiations": []
+    },
+    "RAM_SP_BE": {
+      "instantiations": []
+    },
+    "RAM_DP": {
+      "instantiations": []
+    },
+    "RAM_2P": {
+      "instantiations": []
+    },
+    "case3_sync_2ff": {
+      "instantiations": []
+    },
+    "case3_clk_gate": {
+      "instantiations": []
+    },
+    "case3_perf_counter": {
+      "instantiations": []
+    },
+    "case3_cnt_wrap": {
+      "instantiations": [
+        {
+          "module": "case3_perf_counter",
+          "instance": "u_cnt_core",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case3_sync_2ff",
+          "instance": "u_evt_sync",
+          "style": "positional",
+          "status": "normal"
+        }
+      ]
+    },
+    "case3_sync_fifo": {
+      "instantiations": [
+        {
+          "module": "RAM_SP_BE",
+          "instance": "u_fifo_mem",
+          "style": "positional",
+          "status": "normal"
+        },
+        {
+          "module": "case3_sync_2ff",
+          "instance": "u_wptr_sync",
+          "style": "positional",
+          "status": "normal"
+        },
+        {
+          "module": "case3_sync_2ff",
+          "instance": "u_rptr_sync",
+          "style": "positional",
+          "status": "normal"
+        }
+      ]
+    },
+    "case3_engine_top": {
+      "instantiations": [
+        {
+          "module": "case3_cluster_array",
+          "instance": "u_cluster_array",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case3_scratchpad",
+          "instance": "u_scratchpad",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case3_dma_engine",
+          "instance": "u_dma",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case3_config_regs",
+          "instance": "u_cfg",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case3_cluster_array": {
+      "instantiations": [
+        {
+          "module": "case3_cluster",
+          "instance": "u_cluster[c]",
+          "style": "named",
+          "status": "for_generated",
+          "generate_block": "g_cluster",
+          "loop_depth": 1,
+          "times": 2
+        },
+        {
+          "module": "case3_sync_2ff",
+          "instance": "u_req_sync[c][p]",
+          "style": "positional",
+          "status": "for_generated",
+          "generate_block": "g_cluster",
+          "loop_depth": 2,
+          "times": 2
+        },
+        {
+          "module": "case3_xbar",
+          "instance": "u_plane_xbar",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case3_cluster": {
+      "instantiations": [
+        {
+          "module": "case3_cmd_decoder",
+          "instance": "u_cmd",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case3_slice",
+          "instance": "u_slice[s]",
+          "style": "named",
+          "status": "for_generated",
+          "generate_block": "g_slice",
+          "loop_depth": 1,
+          "times": 2
+        },
+        {
+          "module": "case3_slice_xbar",
+          "instance": "u_slice_xbar",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case3_rf_bank",
+          "instance": "u_shared_rf",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case3_slice": {
+      "instantiations": [
+        {
+          "module": "case3_lane",
+          "instance": "u_lane[l]",
+          "style": "named",
+          "status": "for_generated",
+          "generate_block": "g_lane",
+          "loop_depth": 1,
+          "times": 4
+        },
+        {
+          "module": "case3_lane_local_rf",
+          "instance": "u_local_rf",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case3_slice_monitor",
+          "instance": "u_mon",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case3_cmd_decoder": {
+      "instantiations": [
+        {
+          "module": "case3_sync_2ff",
+          "instance": "u_go_sync",
+          "style": "positional",
+          "status": "normal"
+        },
+        {
+          "module": "case3_clk_gate",
+          "instance": "u_cmd_gate",
+          "style": "positional",
+          "status": "normal"
+        }
+      ]
+    },
+    "case3_rf_bank": {
+      "instantiations": [
+        {
+          "module": "case3_reg_bank",
+          "instance": "u_bank_lo",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        },
+        {
+          "module": "case3_reg_bank",
+          "instance": "u_bank_hi",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        },
+        {
+          "module": "case3_sync_2ff",
+          "instance": "u_rf_ready_sync",
+          "style": "positional",
+          "status": "normal"
+        }
+      ]
+    },
+    "case3_slice_monitor": {
+      "instantiations": [
+        {
+          "module": "case3_cnt_wrap",
+          "instance": "u_cnt_wrap",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case3_perf_counter",
+          "instance": "u_lane_cnt",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case3_sync_2ff",
+          "instance": "u_ovf_sync",
+          "style": "positional",
+          "status": "normal"
+        }
+      ]
+    },
+    "case3_lane": {
+      "instantiations": [
+        {
+          "module": "case3_lane_mul",
+          "instance": "u_mul",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case3_lane_alu",
+          "instance": "u_alu",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case3_lane_shf",
+          "instance": "u_shf",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case3_lane_cmp",
+          "instance": "u_cmp",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case3_lane_sat",
+          "instance": "u_sat",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case3_lane_regfile",
+          "instance": "u_regfile",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case3_lane_agu",
+          "instance": "u_agu",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case3_lane_aligner",
+          "instance": "u_aligner",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case3_sync_2ff",
+          "instance": "u_pipe_s0",
+          "style": "positional",
+          "status": "normal"
+        },
+        {
+          "module": "case3_sync_2ff",
+          "instance": "u_pipe_s1",
+          "style": "positional",
+          "status": "normal"
+        },
+        {
+          "module": "case3_sync_2ff",
+          "instance": "u_pipe_s2",
+          "style": "positional",
+          "status": "normal"
+        },
+        {
+          "module": "case3_sync_2ff",
+          "instance": "u_pipe_s3",
+          "style": "positional",
+          "status": "normal"
+        }
+      ]
+    },
+    "case3_lane_mul": {
+      "instantiations": []
+    },
+    "case3_lane_alu": {
+      "instantiations": []
+    },
+    "case3_lane_shf": {
+      "instantiations": []
+    },
+    "case3_lane_cmp": {
+      "instantiations": []
+    },
+    "case3_lane_sat": {
+      "instantiations": []
+    },
+    "case3_lane_regfile": {
+      "instantiations": [
+        {
+          "module": "RAM_2P",
+          "instance": "u_rf_bank_a",
+          "style": "positional",
+          "status": "normal"
+        },
+        {
+          "module": "RAM_2P",
+          "instance": "u_rf_bank_b",
+          "style": "positional",
+          "status": "normal"
+        }
+      ]
+    },
+    "case3_lane_agu": {
+      "instantiations": []
+    },
+    "case3_lane_aligner": {
+      "instantiations": []
+    },
+    "case3_lane_local_rf": {
+      "instantiations": [
+        {
+          "module": "RAM_2P",
+          "instance": "u_local_rf_ram",
+          "style": "positional",
+          "status": "normal"
+        }
+      ]
+    },
+    "case3_scratchpad": {
+      "instantiations": [
+        {
+          "module": "case3_scratch_bank",
+          "instance": "u_bank[b]",
+          "style": "named+param",
+          "status": "for_generated",
+          "parameter_override": true,
+          "generate_block": "g_bank",
+          "loop_depth": 1,
+          "times": 4
+        },
+        {
+          "module": "case3_scratch_arb",
+          "instance": "u_port_arb[b][p]",
+          "style": "named",
+          "status": "for_generated",
+          "generate_block": "g_bank",
+          "loop_depth": 2,
+          "times": 4
+        },
+        {
+          "module": "case3_scratch_bank",
+          "instance": "u_bank_spare",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case3_sync_fifo",
+          "instance": "u_rd_fifo",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case3_scratch_bank": {
+      "instantiations": [
+        {
+          "module": "RAM_DP",
+          "instance": "u_bank_ram",
+          "style": "positional",
+          "status": "normal"
+        },
+        {
+          "module": "case3_sync_2ff",
+          "instance": "u_bank_busy_sync",
+          "style": "positional",
+          "status": "normal"
+        }
+      ]
+    },
+    "case3_scratch_arb": {
+      "instantiations": [
+        {
+          "module": "case3_clk_gate",
+          "instance": "u_arb_gate",
+          "style": "positional",
+          "status": "normal"
+        }
+      ]
+    },
+    "case3_xbar": {
+      "instantiations": [
+        {
+          "module": "case3_xbar_cell",
+          "instance": "u_cell[i][j]",
+          "style": "named",
+          "status": "for_generated",
+          "generate_block": "g_row",
+          "loop_depth": 2,
+          "times": 2
+        },
+        {
+          "module": "case3_xbar_cell",
+          "instance": "u_cell_broadcast",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case3_sync_2ff",
+          "instance": "u_sel_sync",
+          "style": "positional",
+          "status": "normal"
+        }
+      ]
+    },
+    "case3_slice_xbar": {
+      "instantiations": [
+        {
+          "module": "case3_xbar_cell",
+          "instance": "u_cell[i][j]",
+          "style": "named",
+          "status": "for_generated",
+          "generate_block": "g_lane_row",
+          "loop_depth": 2,
+          "times": 4
+        },
+        {
+          "module": "case3_sync_2ff",
+          "instance": "u_xbar_clk_sync",
+          "style": "positional",
+          "status": "normal"
+        }
+      ]
+    },
+    "case3_xbar_cell": {
+      "instantiations": [
+        {
+          "module": "case3_xbar_arb",
+          "instance": "u_arb_vc0",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        },
+        {
+          "module": "case3_xbar_arb",
+          "instance": "u_arb_vc1",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        },
+        {
+          "module": "case3_xbar_arb",
+          "instance": "u_arb_vc2",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        },
+        {
+          "module": "case3_xbar_arb",
+          "instance": "u_arb_vc3",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        },
+        {
+          "module": "RAM_SP",
+          "instance": "u_skid_buf",
+          "style": "positional",
+          "status": "normal"
+        }
+      ]
+    },
+    "case3_xbar_arb": {
+      "instantiations": [
+        {
+          "module": "case3_sync_2ff",
+          "instance": "u_prio_sync",
+          "style": "positional",
+          "status": "normal"
+        }
+      ]
+    },
+    "case3_dma_engine": {
+      "instantiations": [
+        {
+          "module": "case3_dma_desc_fetch",
+          "instance": "u_desc_fetch",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case3_sync_fifo",
+          "instance": "u_tx_fifo",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case3_sync_fifo",
+          "instance": "u_rx_fifo",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "RAM_SP",
+          "instance": "u_desc_ring",
+          "style": "positional",
+          "status": "normal"
+        },
+        {
+          "module": "case3_sync_2ff",
+          "instance": "u_req_sync",
+          "style": "positional",
+          "status": "normal"
+        }
+      ]
+    },
+    "case3_dma_desc_fetch": {
+      "instantiations": [
+        {
+          "module": "RAM_SP",
+          "instance": "u_desc_mem_lo",
+          "style": "positional",
+          "status": "normal"
+        },
+        {
+          "module": "RAM_SP",
+          "instance": "u_desc_mem_hi",
+          "style": "positional",
+          "status": "normal"
+        }
+      ]
+    },
+    "case3_config_regs": {
+      "instantiations": [
+        {
+          "module": "case3_reg_bank",
+          "instance": "u_reg_bank",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        },
+        {
+          "module": "case3_sync_2ff",
+          "instance": "u_go_sync",
+          "style": "positional",
+          "status": "normal"
+        },
+        {
+          "module": "case3_clk_gate",
+          "instance": "u_cfg_gate",
+          "style": "positional",
+          "status": "normal"
+        }
+      ]
+    },
+    "case3_reg_bank": {
+      "instantiations": [
+        {
+          "module": "RAM_DP",
+          "instance": "u_reg_ram",
+          "style": "positional",
+          "status": "normal"
+        },
+        {
+          "module": "case3_sync_2ff",
+          "instance": "u_reg_ready_sync",
+          "style": "positional",
+          "status": "normal"
+        }
+      ]
+    }
+  }
+}

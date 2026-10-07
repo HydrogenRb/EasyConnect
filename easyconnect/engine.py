@@ -308,10 +308,26 @@ def lift_expression(expression, node, hierarchy, stack=()):
     return pattern.sub(replace, expression or "")
 
 
-def signal_info(node, name, hierarchy):
+def signal_info(node, name, hierarchy, required=True):
     module = hierarchy.definition(node)
     if module:
-        return module.signals.get(name) or module.ports.get(name)
+        info = module.signals.get(name) or module.ports.get(name)
+        if info is not None:
+            return info
+        available = sorted(set(module.signals) | set(module.ports))
+        preview = ", ".join(available[:24])
+        if len(available) > 24:
+            preview += ", ..."
+        # An interface member is scoped by the interface port instance. It is
+        # intentionally not flattened into the module signal namespace.
+        hint = (" If this is an interface member, use the wrapper's ordinary "
+                "signal/port or expose it explicitly; an interface member is not "
+                "addressed as module.signal.")
+        if not required:
+            return None
+        raise ValueError("Source/destination signal {!r} does not exist in module {!r} "
+                         "for instance {!r}. Declared names: [{}].{}".format(
+                             name, module.name, node.path, preview, hint))
     metadata = hierarchy.cbb.get(node.module, {})
     entry = metadata.get("ports", {}).get(name)
     if not entry:
@@ -540,8 +556,8 @@ def route(root, texts, spec):
     tn, target, ts = hierarchy.endpoint(canonical_target)
     ancestor = common_ancestor(sn, tn)
     up, down = boundary_path(sn, ancestor), boundary_path(tn, ancestor)
-    sinfo = step("read source signal declaration", signal_info, sn, source, hierarchy)
-    tinfo = step("read target signal declaration", signal_info, tn, target, hierarchy)
+    sinfo = step("read source signal declaration", signal_info, sn, source, hierarchy, True)
+    tinfo = step("read target signal declaration", signal_info, tn, target, hierarchy, False)
     if sinfo is None:
         fail("read source signal declaration", "Source signal does not exist: " + canonical_source)
     ss = step("resolve source selector scope", lift_expression, ss, sn, hierarchy)
