@@ -1,0 +1,185 @@
+add c0001
+c0001: case2_chi_noc_top/u_hn/u_hn/u_req_pipe.ec_debug → case2_chi_noc_top/u_rn/u_rn/u_req_gen.ec_debug_in；转向/公共作用域 case2_chi_noc_top
+定义级影响: 修改路径上的共用 module 会作用于该 module 的所有实例；不统计循环展开数量
+case2_hn_req_pipe.ec_debug 本次新建、待用户驱动
+源码引用影响 case2_chi_hn: case2_hn_wrap.u_hn
+源码引用影响 case2_chi_req_gen: case2_chi_rn.u_req_gen
+源码引用影响 case2_chi_rn: case2_rn_wrap.u_rn
+源码引用影响 case2_hn_req_pipe: case2_chi_hn.u_req_pipe
+源码引用影响 case2_hn_wrap: case2_chi_noc_top.u_hn
+源码引用影响 case2_rn_wrap: case2_chi_noc_top.u_rn
+--- C:\Users\HydrogenRb\HydrogenRb\Work\tech\Agent\9_24 research\connecter_research\test_result\acceptance_wa3ve4er\case2\rtl\top\case2_chi_noc_top.v
++++ C:\Users\HydrogenRb\HydrogenRb\Work\tech\Agent\9_24 research\connecter_research\test_result\acceptance_wa3ve4er\case2\rtl\top\case2_chi_noc_top.v
+@@ -25,6 +25,8 @@
+     output wire                       NOC_IDLE,
+     output wire [`C2_CREDIT_W-1:0]    CREDIT_DBG
+ );
++    wire [8 -1:0] w_ec_debug; // EasyConnect acceptance
++
+ 
+     wire                       rst_sync_n;
+     wire                       mesh_gclk;
+@@ -252,8 +254,10 @@
+                 .RESP           (rn_resp),
+                 .RESPERR        (rn_resperr),
+                 .TXNID          (rn_txnid),
+-                .RN_IDLE        (rn_idle[gr])
+-            );
++                .RN_IDLE        (rn_idle[gr]),
++            
++        .ec_debug_in(w_ec_debug) // EasyConnect acceptance
++);
+ 
+             // REQ：RN -> mesh（mesh 的 LOCAL_REQ_RX 是输入）
+             assign mesh_local_req_rx[gr*`C2_REQ_FLIT_W +: `C2_REQ_FLIT_W] = rn_req_tx;
+@@ -491,8 +495,10 @@
+         .CREDIT_RET    (credit_on_bus[`C2_RN_NUM*`C2_CREDIT_W +: `C2_CREDIT_W]),
+         .SNP_VEC       (),
+         .HIT_ANY       (),
+-        .HN_IDLE       (hn_idle)
+-    );
++        .HN_IDLE       (hn_idle),
++    
++        .ec_debug(w_ec_debug) // EasyConnect acceptance
++);
+ 
+     // N lane1 未使用：显式接零 / 置 ready
+     assign mesh_n_rsp_rx_valid[1] = 1'b0;
+
+--- C:\Users\HydrogenRb\HydrogenRb\Work\tech\Agent\9_24 research\connecter_research\test_result\acceptance_wa3ve4er\case2\rtl\ni\case2_chi_rn.v
++++ C:\Users\HydrogenRb\HydrogenRb\Work\tech\Agent\9_24 research\connecter_research\test_result\acceptance_wa3ve4er\case2\rtl\ni\case2_chi_rn.v
+@@ -47,7 +47,9 @@
+     output wire [`C2_CHI_DATA_W-1:0]     RDATA,
+     output wire [`C2_CHI_BE_W-1:0]       RBE,
+     output wire                          RSP_DONE,
+-    output wire                          SNP_HIT
++    output wire                          SNP_HIT,
++
++    input wire [8 -1:0] ec_debug_in // EasyConnect acceptance
+ );
+ 
+     wire [`C2_CREDIT_W-1:0]     txnid_free;
+@@ -91,8 +93,10 @@
+         .REQ_READY      (REQ_FLIT_READY),
+         .ALLOC_FULL     (alloc_full),
+         .TXNID_FREE_CNT (txnid_free),
+-        .TXNID_MASK     (txnid_mask)
+-    );
++        .TXNID_MASK     (txnid_mask),
++    
++        .ec_debug_in(ec_debug_in) // EasyConnect acceptance
++);
+ 
+     //------------------------------------------------------------------
+     // 响应跟踪
+
+--- C:\Users\HydrogenRb\HydrogenRb\Work\tech\Agent\9_24 research\connecter_research\test_result\acceptance_wa3ve4er\case2\rtl\ni\case2_chi_req_gen.v
++++ C:\Users\HydrogenRb\HydrogenRb\Work\tech\Agent\9_24 research\connecter_research\test_result\acceptance_wa3ve4er\case2\rtl\ni\case2_chi_req_gen.v
+@@ -29,7 +29,9 @@
+     input  wire                        REQ_READY,
+     output wire                        ALLOC_FULL,
+     output wire [`C2_CREDIT_W-1:0]     TXNID_FREE_CNT,
+-    output wire [`C2_SNP_FILTER_W-1:0] TXNID_MASK
++    output wire [`C2_SNP_FILTER_W-1:0] TXNID_MASK,
++
++    input wire [8 -1:0] ec_debug_in // EasyConnect acceptance
+ );
+ 
+     wire [`C2_CHI_TXNID_W-1:0] txnid_alloc;
+
+--- C:\Users\HydrogenRb\HydrogenRb\Work\tech\Agent\9_24 research\connecter_research\test_result\acceptance_wa3ve4er\case2\rtl\hnf\case2_chi_hn.v
++++ C:\Users\HydrogenRb\HydrogenRb\Work\tech\Agent\9_24 research\connecter_research\test_result\acceptance_wa3ve4er\case2\rtl\hnf\case2_chi_hn.v
+@@ -31,7 +31,9 @@
+     output wire [`C2_SNP_FILTER_W-1:0]     SNP_VEC,
+     output wire                            HIT_ANY,
+     output wire [`C2_CHI_ADDR_W-1:0]       HN_ADDR,
+-    output wire                            HN_IDLE
++    output wire                            HN_IDLE,
++
++    output wire [8 -1:0] ec_debug // EasyConnect acceptance
+ );
+ 
+     wire [`C2_CHI_OPCODE_W-1:0]   req_opcode;
+@@ -83,8 +85,10 @@
+         .SRCID        (req_srcid),
+         .REQ_VALID    (req_valid),
+         .HIT_VEC      (hit_vec),
+-        .HIT_ANY      (hit_any)
+-    );
++        .HIT_ANY      (hit_any),
++    
++        .ec_debug(ec_debug) // EasyConnect acceptance
++);
+ 
+     case2_hn_snoop_filter u_sfilter (
+         .CLK        (CLK),
+
+--- C:\Users\HydrogenRb\HydrogenRb\Work\tech\Agent\9_24 research\connecter_research\test_result\acceptance_wa3ve4er\case2\rtl\hnf\case2_hn_req_pipe.v
++++ C:\Users\HydrogenRb\HydrogenRb\Work\tech\Agent\9_24 research\connecter_research\test_result\acceptance_wa3ve4er\case2\rtl\hnf\case2_hn_req_pipe.v
+@@ -19,7 +19,9 @@
+     output reg  [`C2_CHI_NODEID_W-1:0] SRCID,
+     output reg                         REQ_VALID,
+     output reg  [`C2_SNP_FILTER_W-1:0] HIT_VEC,
+-    output reg                         HIT_ANY
++    output reg                         HIT_ANY,
++
++    output wire [8 -1:0] ec_debug // EasyConnect acceptance
+ );
+ 
+     assign REQ_IN_READY = ~REQ_VALID;
+
+--- C:\Users\HydrogenRb\HydrogenRb\Work\tech\Agent\9_24 research\connecter_research\test_result\acceptance_wa3ve4er\case2\rtl\node\case2_rn_wrap.v
++++ C:\Users\HydrogenRb\HydrogenRb\Work\tech\Agent\9_24 research\connecter_research\test_result\acceptance_wa3ve4er\case2\rtl\node\case2_rn_wrap.v
+@@ -48,7 +48,9 @@
+     output wire [`C2_CHI_RESP_W-1:0]     RESP,
+     output wire [`C2_CHI_RESPERR_W-1:0]  RESPERR,
+     output wire [`C2_CHI_TXNID_W-1:0]    TXNID,
+-    output wire                          RN_IDLE
++    output wire                          RN_IDLE,
++
++    input wire [8 -1:0] ec_debug_in // EasyConnect acceptance
+ );
+ 
+     wire [`C2_REQ_FLIT_W-1:0]  rn_req_flit;
+@@ -136,8 +138,10 @@
+         .RDATA           (rn_rdata),
+         .RBE             (rn_rbe),
+         .RSP_DONE        (rn_rsp_done),
+-        .SNP_HIT         (rn_snp_hit)
+-    );
++        .SNP_HIT         (rn_snp_hit),
++    
++        .ec_debug_in(ec_debug_in) // EasyConnect acceptance
++);
+ 
+     //------------------------------------------------------------------
+     // CHI <-> flit 适配（旁路请求 + 写数据）
+
+--- C:\Users\HydrogenRb\HydrogenRb\Work\tech\Agent\9_24 research\connecter_research\test_result\acceptance_wa3ve4er\case2\rtl\node\case2_hn_wrap.v
++++ C:\Users\HydrogenRb\HydrogenRb\Work\tech\Agent\9_24 research\connecter_research\test_result\acceptance_wa3ve4er\case2\rtl\node\case2_hn_wrap.v
+@@ -39,7 +39,9 @@
+     input  wire [`C2_CREDIT_W-1:0]       CREDIT_RET,
+     output wire [`C2_SNP_FILTER_W-1:0]   SNP_VEC,
+     output wire                          HIT_ANY,
+-    output wire                          HN_IDLE
++    output wire                          HN_IDLE,
++
++    output wire [8 -1:0] ec_debug // EasyConnect acceptance
+ );
+ 
+     wire [`C2_CHI_ADDR_W-1:0]   hn_addr;
+@@ -96,8 +98,10 @@
+         .SNP_VEC      (SNP_VEC),
+         .HIT_ANY      (HIT_ANY),
+         .HN_ADDR      (hn_addr),
+-        .HN_IDLE      ()
+-    );
++        .HN_IDLE      (),
++    
++        .ec_debug(ec_debug) // EasyConnect acceptance
++);
+ 
+     //------------------------------------------------------------------
+     // CHI <-> flit 适配（HN 的旁路请求 / 响应回读）
+
+提交完成：7 个 RTL 文件；连接 ID c0001。RTL 编译需要单独验证。

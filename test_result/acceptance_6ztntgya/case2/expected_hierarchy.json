@@ -1,0 +1,952 @@
+{
+  "schema_version": "1.0",
+  "view": "expected_hierarchy",
+  "elaborated": false,
+  "frontend": {
+    "name": "verify_cases.py",
+    "version": "1.0"
+  },
+  "input_config": {
+    "source_file": "case2",
+    "top": "case2_chi_noc_top"
+  },
+  "note": "Generate/for instances are listed once, with the genvar in the instance name (u_slot[i]); the real elaborated count is in the per-instance 'times' field when the loop bound is a literal.",
+  "roots": [
+    "case2_chi_noc_top"
+  ],
+  "modules": {
+    "RAM_SP": {
+      "instantiations": []
+    },
+    "RAM_SP_BE": {
+      "instantiations": []
+    },
+    "RAM_DP": {
+      "instantiations": []
+    },
+    "RAM_2P": {
+      "instantiations": []
+    },
+    "case2_chi_noc_top": {
+      "instantiations": [
+        {
+          "module": "case2_sync_2ff",
+          "instance": "u_rst_sync",
+          "style": "positional",
+          "status": "normal"
+        },
+        {
+          "module": "case2_clk_gate",
+          "instance": "u_mesh_cg",
+          "style": "positional",
+          "status": "normal"
+        },
+        {
+          "module": "case2_rn_wrap",
+          "instance": "u_rn[gr]",
+          "style": "named",
+          "status": "for_generated",
+          "generate_block": "g_rn",
+          "loop_depth": 1,
+          "times": 4
+        },
+        {
+          "module": "case2_router_mesh",
+          "instance": "u_mesh",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_hn_wrap",
+          "instance": "u_hn",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_sn_wrap",
+          "instance": "u_sn",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_router_credit_mgr",
+          "instance": "u_credit_mgr",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_noc_buf_ram_wrap",
+          "instance": "u_dbg_ram",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_sync_fifo",
+          "instance": "u_cfg_fifo",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case2_router_mesh": {
+      "instantiations": [
+        {
+          "module": "case2_noc_arbiter",
+          "instance": "u_sn_req_arb",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_noc_arbiter",
+          "instance": "u_sn_dat_arb",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_noc_router",
+          "instance": "u_router[gy][gx]",
+          "style": "named",
+          "status": "for_generated",
+          "generate_block": "g_router_row",
+          "loop_depth": 2,
+          "times": 2
+        },
+        {
+          "module": "case2_mesh_link",
+          "instance": "u_link_req[gy][gx]",
+          "style": "named",
+          "status": "for_generated",
+          "generate_block": "g_router_row",
+          "loop_depth": 2,
+          "times": 2
+        },
+        {
+          "module": "case2_mesh_link",
+          "instance": "u_link_rsp[gy][gx]",
+          "style": "named",
+          "status": "for_generated",
+          "generate_block": "g_router_row",
+          "loop_depth": 2,
+          "times": 2
+        },
+        {
+          "module": "case2_mesh_link",
+          "instance": "u_link_snp[gy][gx]",
+          "style": "named",
+          "status": "for_generated",
+          "generate_block": "g_router_row",
+          "loop_depth": 2,
+          "times": 2
+        },
+        {
+          "module": "case2_mesh_link",
+          "instance": "u_link_dat[gy][gx]",
+          "style": "named",
+          "status": "for_generated",
+          "generate_block": "g_router_row",
+          "loop_depth": 2,
+          "times": 2
+        }
+      ]
+    },
+    "case2_noc_router": {
+      "instantiations": [
+        {
+          "module": "case2_noc_router_port",
+          "instance": "u_port[gp]",
+          "style": "named+param",
+          "status": "for_generated",
+          "parameter_override": true,
+          "generate_block": "g_port",
+          "loop_depth": 1,
+          "times": 5
+        },
+        {
+          "module": "case2_noc_route",
+          "instance": "u_route",
+          "style": "named+param",
+          "status": "normal",
+          "parameter_override": true
+        },
+        {
+          "module": "case2_noc_alloc",
+          "instance": "u_alloc",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_noc_xbar",
+          "instance": "u_xbar",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case2_noc_router_port": {
+      "instantiations": [
+        {
+          "module": "case2_noc_input_buf",
+          "instance": "u_inbuf[gc]",
+          "style": "named",
+          "status": "for_generated",
+          "generate_block": "g_ch_inbuf",
+          "loop_depth": 1,
+          "times": 4
+        },
+        {
+          "module": "case2_noc_vc",
+          "instance": "u_vc[gv]",
+          "style": "named+param",
+          "status": "for_generated",
+          "parameter_override": true,
+          "generate_block": "g_vc",
+          "loop_depth": 1,
+          "times": 2
+        },
+        {
+          "module": "case2_noc_output_buf",
+          "instance": "u_outbuf",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_noc_credit_ctrl",
+          "instance": "u_credit",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_noc_link_sync",
+          "instance": "u_link_sync",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case2_noc_vc": {
+      "instantiations": [
+        {
+          "module": "case2_noc_vc_buf",
+          "instance": "u_vc_buf",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_noc_credit_ctrl",
+          "instance": "u_vc_credit",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_alloc_ptr",
+          "instance": "u_vc_ptr",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_alloc_ptr",
+          "instance": "u_rd_ptr",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case2_noc_vc_buf": {
+      "instantiations": [
+        {
+          "module": "RAM_SP_BE",
+          "instance": "u_flit_ram",
+          "style": "positional+param",
+          "status": "normal",
+          "parameter_override": true
+        }
+      ]
+    },
+    "case2_noc_input_buf": {
+      "instantiations": [
+        {
+          "module": "case2_sync_fifo",
+          "instance": "u_hdr_fifo",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_noc_buf_ram_wrap",
+          "instance": "u_payload_ram",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_alloc_ptr",
+          "instance": "u_rd_ptr",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case2_noc_output_buf": {
+      "instantiations": [
+        {
+          "module": "case2_sync_2ff",
+          "instance": "u_valid_sync",
+          "style": "positional",
+          "status": "normal"
+        },
+        {
+          "module": "case2_clk_gate",
+          "instance": "u_out_cg",
+          "style": "positional",
+          "status": "normal"
+        },
+        {
+          "module": "case2_alloc_ptr",
+          "instance": "u_out_ptr",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case2_noc_credit_ctrl": {
+      "instantiations": []
+    },
+    "case2_noc_link_sync": {
+      "instantiations": []
+    },
+    "case2_noc_route": {
+      "instantiations": []
+    },
+    "case2_noc_alloc": {
+      "instantiations": [
+        {
+          "module": "case2_noc_arbiter",
+          "instance": "u_port_arb[gp]",
+          "style": "named",
+          "status": "for_generated",
+          "generate_block": "g_port_arb",
+          "loop_depth": 1,
+          "times": 5
+        }
+      ]
+    },
+    "case2_noc_arbiter": {
+      "instantiations": []
+    },
+    "case2_noc_xbar": {
+      "instantiations": [
+        {
+          "module": "case2_noc_xbar_out",
+          "instance": "u_out[go][gv]",
+          "style": "named+param",
+          "status": "for_generated",
+          "parameter_override": true,
+          "generate_block": "g_out_port",
+          "loop_depth": 2,
+          "times": 5
+        }
+      ]
+    },
+    "case2_noc_xbar_out": {
+      "instantiations": [
+        {
+          "module": "case2_noc_arbiter",
+          "instance": "u_arb_req",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_noc_arbiter",
+          "instance": "u_arb_rsp",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_noc_arbiter",
+          "instance": "u_arb_snp",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_noc_arbiter",
+          "instance": "u_arb_dat",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case2_noc_buf_ram_wrap": {
+      "instantiations": [
+        {
+          "module": "RAM_SP_BE",
+          "instance": "u_buf_ram",
+          "style": "positional+param",
+          "status": "normal",
+          "parameter_override": true
+        }
+      ]
+    },
+    "case2_alloc_ptr": {
+      "instantiations": []
+    },
+    "case2_mesh_link": {
+      "instantiations": [
+        {
+          "module": "case2_sync_fifo",
+          "instance": "u_link_fifo",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_sync_2ff",
+          "instance": "u_valid_sync",
+          "style": "positional",
+          "status": "normal"
+        },
+        {
+          "module": "case2_gray_sync",
+          "instance": "u_ptr_sync",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_noc_credit_ctrl",
+          "instance": "u_link_credit",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_noc_link_sync",
+          "instance": "u_link_sync",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case2_router_credit_mgr": {
+      "instantiations": [
+        {
+          "module": "case2_clk_gate",
+          "instance": "u_mgr_cg",
+          "style": "positional",
+          "status": "normal"
+        },
+        {
+          "module": "case2_noc_credit_ctrl",
+          "instance": "u_link_credit[gy][gx]",
+          "style": "named",
+          "status": "for_generated",
+          "generate_block": "g_row",
+          "loop_depth": 2,
+          "times": 2
+        },
+        {
+          "module": "case2_gray_sync",
+          "instance": "u_credit_sync[gy][gx]",
+          "style": "named",
+          "status": "for_generated",
+          "generate_block": "g_row",
+          "loop_depth": 2,
+          "times": 2
+        },
+        {
+          "module": "case2_noc_credit_ctrl",
+          "instance": "u_sn_credit[gy][gx]",
+          "style": "named",
+          "status": "for_generated",
+          "generate_block": "g_row",
+          "loop_depth": 2,
+          "times": 2
+        },
+        {
+          "module": "case2_noc_credit_ctrl",
+          "instance": "u_bound_n[gy][gx]",
+          "style": "named",
+          "status": "for_generated",
+          "generate_block": "g_row",
+          "loop_depth": 2,
+          "times": 2
+        },
+        {
+          "module": "case2_noc_credit_ctrl",
+          "instance": "u_bound_s[gy][gx]",
+          "style": "named",
+          "status": "for_generated",
+          "generate_block": "g_row",
+          "loop_depth": 2,
+          "times": 2
+        },
+        {
+          "module": "case2_noc_credit_ctrl",
+          "instance": "u_bound_w[gy][gx]",
+          "style": "named",
+          "status": "for_generated",
+          "generate_block": "g_row",
+          "loop_depth": 2,
+          "times": 2
+        },
+        {
+          "module": "case2_noc_credit_ctrl",
+          "instance": "u_bound_e[gy][gx]",
+          "style": "named",
+          "status": "for_generated",
+          "generate_block": "g_row",
+          "loop_depth": 2,
+          "times": 2
+        },
+        {
+          "module": "case2_noc_credit_ctrl",
+          "instance": "u_port_credit[gp]",
+          "style": "named",
+          "status": "for_generated",
+          "generate_block": "g_port_credit",
+          "loop_depth": 1,
+          "times": 5
+        }
+      ]
+    },
+    "case2_chi_rn": {
+      "instantiations": [
+        {
+          "module": "case2_chi_req_gen",
+          "instance": "u_req_gen",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_chi_rsp_track",
+          "instance": "u_rsp_track",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_chi_snp_handle",
+          "instance": "u_snp",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_chi_dat_path",
+          "instance": "u_dat",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case2_chi_req_gen": {
+      "instantiations": [
+        {
+          "module": "case2_chi_txnid_alloc",
+          "instance": "u_txnid",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_chi_flit_pack",
+          "instance": "u_pack",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case2_chi_rsp_track": {
+      "instantiations": [
+        {
+          "module": "case2_chi_flit_unpack",
+          "instance": "u_unpack",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_chi_rsp_order",
+          "instance": "u_order",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_chi_credit_release",
+          "instance": "u_credit",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_sync_fifo",
+          "instance": "u_track_fifo",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case2_chi_snp_handle": {
+      "instantiations": [
+        {
+          "module": "case2_chi_flit_unpack",
+          "instance": "u_unpack",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_chi_flit_pack",
+          "instance": "u_pack",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_noc_arbiter",
+          "instance": "u_snp_arb",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case2_chi_dat_path": {
+      "instantiations": [
+        {
+          "module": "case2_chi_flit_unpack",
+          "instance": "u_unpack",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "RAM_DP",
+          "instance": "u_wdata_ram",
+          "style": "positional+param",
+          "status": "normal",
+          "parameter_override": true
+        },
+        {
+          "module": "case2_sync_fifo",
+          "instance": "u_wdata_fifo",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case2_chi_to_noc": {
+      "instantiations": [
+        {
+          "module": "case2_chi_flit_pack",
+          "instance": "u_pack",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_chi_txnid_alloc",
+          "instance": "u_txnid",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_chi_credit_release",
+          "instance": "u_credit_rel",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_sync_fifo",
+          "instance": "u_tx_fifo",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case2_noc_to_chi": {
+      "instantiations": [
+        {
+          "module": "case2_chi_flit_unpack",
+          "instance": "u_unpack",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_chi_rsp_order",
+          "instance": "u_order",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_sync_fifo",
+          "instance": "u_rx_fifo",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case2_chi_flit_pack": {
+      "instantiations": []
+    },
+    "case2_chi_flit_unpack": {
+      "instantiations": []
+    },
+    "case2_chi_txnid_alloc": {
+      "instantiations": []
+    },
+    "case2_chi_credit_release": {
+      "instantiations": []
+    },
+    "case2_chi_rsp_order": {
+      "instantiations": []
+    },
+    "case2_chi_hn": {
+      "instantiations": [
+        {
+          "module": "case2_hn_req_pipe",
+          "instance": "u_req_pipe",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_hn_snoop_filter",
+          "instance": "u_sfilter",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_hn_rsp_gen",
+          "instance": "u_rsp_gen",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_hn_dat_pipe",
+          "instance": "u_dat_pipe",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_chi_flit_pack",
+          "instance": "u_pack",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case2_hn_snoop_filter": {
+      "instantiations": [
+        {
+          "module": "RAM_DP",
+          "instance": "u_tag_ram",
+          "style": "positional+param",
+          "status": "normal",
+          "parameter_override": true
+        },
+        {
+          "module": "case2_alloc_ptr",
+          "instance": "u_tag_ptr",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_gray_sync",
+          "instance": "u_tag_sync",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case2_hn_req_pipe": {
+      "instantiations": []
+    },
+    "case2_hn_rsp_gen": {
+      "instantiations": []
+    },
+    "case2_hn_dat_pipe": {
+      "instantiations": [
+        {
+          "module": "case2_chi_flit_unpack",
+          "instance": "u_unpack",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_chi_dbid_alloc",
+          "instance": "u_dbid",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_sync_fifo",
+          "instance": "u_dat_fifo",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case2_chi_sn": {
+      "instantiations": [
+        {
+          "module": "case2_chi_sn_pipe",
+          "instance": "u_pipe",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_noc_buf_ram_wrap",
+          "instance": "u_ram_wrap",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_chi_dbid_alloc",
+          "instance": "u_dbid",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case2_chi_sn_pipe": {
+      "instantiations": [
+        {
+          "module": "case2_chi_flit_unpack",
+          "instance": "u_unpack",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_noc_buf_ram_wrap",
+          "instance": "u_sn_ram",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_chi_dbid_alloc",
+          "instance": "u_sn_dbid",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_sync_fifo",
+          "instance": "u_sn_fifo",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_chi_flit_pack",
+          "instance": "u_pack",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case2_chi_dbid_alloc": {
+      "instantiations": []
+    },
+    "case2_rn_wrap": {
+      "instantiations": [
+        {
+          "module": "case2_chi_rn",
+          "instance": "u_rn",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_chi_to_noc",
+          "instance": "u_to_noc",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_noc_to_chi",
+          "instance": "u_to_chi",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_noc_arbiter",
+          "instance": "u_req_arb",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case2_hn_wrap": {
+      "instantiations": [
+        {
+          "module": "case2_chi_hn",
+          "instance": "u_hn",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_chi_to_noc",
+          "instance": "u_to_noc",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_noc_to_chi",
+          "instance": "u_to_chi",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case2_sn_wrap": {
+      "instantiations": [
+        {
+          "module": "case2_chi_sn",
+          "instance": "u_sn[gs]",
+          "style": "named",
+          "status": "for_generated",
+          "generate_block": "g_sn",
+          "loop_depth": 1,
+          "times": 8
+        },
+        {
+          "module": "case2_clk_gate",
+          "instance": "u_sn_cg",
+          "style": "positional",
+          "status": "normal"
+        },
+        {
+          "module": "case2_chi_to_noc",
+          "instance": "u_to_noc",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_noc_to_chi",
+          "instance": "u_to_chi",
+          "style": "named",
+          "status": "normal"
+        }
+      ]
+    },
+    "case2_sync_fifo": {
+      "instantiations": [
+        {
+          "module": "case2_alloc_ptr",
+          "instance": "u_wr_ptr",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_alloc_ptr",
+          "instance": "u_rd_ptr",
+          "style": "named",
+          "status": "normal"
+        },
+        {
+          "module": "case2_sync_2ff",
+          "instance": "u_rd_valid_sync",
+          "style": "positional",
+          "status": "normal"
+        },
+        {
+          "module": "RAM_SP_BE",
+          "instance": "u_fifo_ram",
+          "style": "positional+param",
+          "status": "normal",
+          "parameter_override": true
+        }
+      ]
+    },
+    "case2_sync_2ff": {
+      "instantiations": []
+    },
+    "case2_gray_sync": {
+      "instantiations": []
+    },
+    "case2_clk_gate": {
+      "instantiations": []
+    }
+  }
+}

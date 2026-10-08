@@ -1,0 +1,48 @@
+{
+  "requirements": "docs/1.0版本需求文档.md",
+  "run_folder": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\verification_rzovqbvs",
+  "cases": [
+    {
+      "case": 1,
+      "modules": 36,
+      "instances": 46,
+      "src_instance": "case1_soc_top/u_cpu_m0/u_dma/u_fetch[gc]",
+      "dst_instance": "case1_soc_top/u_perf_mon",
+      "rtl_restored": true,
+      "html": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\verification_rzovqbvs\\reports\\case1\\hierarchy.html",
+      "graph_add_mv_rm": "passed"
+    },
+    {
+      "case": 2,
+      "modules": 50,
+      "instances": 126,
+      "src_instance": "case2_chi_noc_top/u_hn/u_hn/u_req_pipe",
+      "dst_instance": "case2_chi_noc_top/u_rn/u_rn/u_req_gen",
+      "rtl_restored": true,
+      "html": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\verification_rzovqbvs\\reports\\case2\\hierarchy.html",
+      "graph_add_mv_rm": "passed"
+    },
+    {
+      "case": 3,
+      "modules": 37,
+      "instances": 72,
+      "src_instance": "case3_engine_top/u_dma/u_desc_fetch",
+      "dst_instance": "case3_engine_top/u_cfg",
+      "rtl_restored": true,
+      "html": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\verification_rzovqbvs\\reports\\case3\\hierarchy.html",
+      "graph_add_mv_rm": "passed"
+    }
+  ],
+  "test_rtlgraph.py": {
+    "passed": true,
+    "tests": 12,
+    "log": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\verification_rzovqbvs\\test_rtlgraph.py.log"
+  },
+  "test_easyconnect.py": {
+    "passed": true,
+    "tests": 58,
+    "log": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\verification_rzovqbvs\\test_easyconnect.py.log"
+  },
+  "golden_unchanged": true,
+  "passed": true
+}

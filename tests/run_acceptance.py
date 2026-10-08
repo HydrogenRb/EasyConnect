@@ -37,9 +37,10 @@ def main():
     baseline_hashes = hashes(ROOT / "test_cases")
     environment = dict(os.environ, PYTHONIOENCODING="utf-8")
     summary = {"requirements": "docs/1.0版本需求文档.md", "run_folder": str(run), "cases": []}
-    for script in ["test_easyconnect.py"] + (["test_compiler.py"] if args.compile else []):
+    scripts = ["test_rtlgraph.py", "test_easyconnect.py"] + (["test_compiler.py"] if args.compile else [])
+    for script in scripts:
         started = time.monotonic()
-        process = subprocess.run([sys.executable, str(ROOT / "tests" / script)], capture_output=True,
+        process = subprocess.run([sys.executable, str(ROOT / "tests" / script)], input="", capture_output=True,
                                  encoding="utf-8", env=environment)
         (run / (script + ".log")).write_text(process.stdout + process.stderr, encoding="utf-8")
         print("%s: %s (%.1fs)" % (script, "passed" if process.returncode == 0 else "FAILED", time.monotonic() - started), flush=True)
@@ -112,7 +113,7 @@ def main():
     summary["passed"] = True
     (run / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     (result_root / "latest_verification.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    total = sum(summary[s]["tests"] or 0 for s in ("test_easyconnect.py", "test_compiler.py") if s in summary)
+    total = sum(summary[s]["tests"] or 0 for s in scripts)
     lines = ["# EasyConnect 1.0 测试报告", "", "需求基准：`docs/1.0版本需求文档.md` 及其引用的连线 PLAN。", "",
              "本轮 %d 项自动测试通过；三个 case 均通过建图、HTML、add/mv/rm 验收，rm 后 RTL 字节恢复一致。" % total,
              "所有可变测试在 `test_result/` 副本中进行，`test_cases/` 全部文件的 SHA-256 比较一致。", "",
@@ -122,10 +123,12 @@ def main():
         lines.append("| case%d | %d | %d | %s | %s |" %
                      (case["case"], case["modules"], case["instances"], case.get("baseline_compile_errors", "未执行"),
                       "/".join(str(errors[s]) for s in ("add", "mv", "rm")) if errors else "未执行"))
-    lines.extend(["", "原始工程的编译错误已单独记录，没有改动 golden 代码。合法的小工程使用独立 slang 编译器检查；源码编辑成功和整个原始工程编译通过分别报告。", "",
+    compile_note = ("原始工程的编译错误已单独记录，没有改动 golden 代码。合法的小工程使用独立 slang 编译器检查；源码编辑成功和整个原始工程编译通过分别报告。"
+                    if args.compile else "本轮执行零依赖解析、连线和 HTML 验证，未运行独立 Verilog 编译器。")
+    lines.extend(["", compile_note, "",
                   "验证命令：`python tests/run_acceptance.py" + (" --compile`" if args.compile else "`"), "",
                   "产物：", "", "- [验收汇总](%s/summary.json)" % run.name])
-    for script in ("test_easyconnect.py", "test_compiler.py"):
+    for script in scripts:
         if script in summary:
             lines.append("- [%s：%d 项通过](%s/%s.log)" % (script, summary[script]["tests"], run.name, script))
     for case in summary["cases"]:

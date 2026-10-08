@@ -1,0 +1,211 @@
+{
+  "schema_version": "1.0",
+  "view": "source_hierarchy",
+  "elaborated": false,
+  "frontend": {
+    "name": "EasyConnect",
+    "version": "1.0"
+  },
+  "roots": [
+    "TOP"
+  ],
+  "modules": {
+    "DST": {
+      "file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_turn_wire_user_use_survives_rm_hbj9wyfw\\DST.v",
+      "start_line": 1,
+      "end_line": 2,
+      "port_start_line": 1,
+      "port_end_line": 1,
+      "ports": [
+        "clk"
+      ],
+      "instantiations": []
+    },
+    "MID": {
+      "file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_turn_wire_user_use_survives_rm_hbj9wyfw\\MID.v",
+      "start_line": 1,
+      "end_line": 3,
+      "port_start_line": 1,
+      "port_end_line": 1,
+      "ports": [
+        "clk"
+      ],
+      "instantiations": [
+        {
+          "module": "SRC",
+          "instance": "U_SRC",
+          "style": "normal",
+          "status": "normal",
+          "start_line": 2,
+          "end_line": 2,
+          "instance_start_line": 2,
+          "instance_end_line": 2,
+          "module_start_line": 1,
+          "module_end_line": 2,
+          "port_start_line": 1,
+          "port_end_line": 1,
+          "parent_port_start_line": 1,
+          "parent_port_end_line": 1,
+          "file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_turn_wire_user_use_survives_rm_hbj9wyfw\\MID.v",
+          "module_file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_turn_wire_user_use_survives_rm_hbj9wyfw\\SRC.v",
+          "start_offset": 30,
+          "end_offset": 52,
+          "connection_start_offset": 40,
+          "connection_end_offset": 50,
+          "ordinal": 0,
+          "named_ports": true,
+          "parameter_override": false,
+          "connections": {
+            "clk": "clk"
+          }
+        }
+      ]
+    },
+    "SRC": {
+      "file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_turn_wire_user_use_survives_rm_hbj9wyfw\\SRC.v",
+      "start_line": 1,
+      "end_line": 2,
+      "port_start_line": 1,
+      "port_end_line": 1,
+      "ports": [
+        "clk"
+      ],
+      "instantiations": []
+    },
+    "TOP": {
+      "file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_turn_wire_user_use_survives_rm_hbj9wyfw\\TOP.v",
+      "start_line": 1,
+      "end_line": 8,
+      "port_start_line": 1,
+      "port_end_line": 1,
+      "ports": [
+        "clk"
+      ],
+      "instantiations": [
+        {
+          "module": "MID",
+          "instance": "U_MID",
+          "style": "normal",
+          "status": "normal",
+          "start_line": 4,
+          "end_line": 4,
+          "instance_start_line": 4,
+          "instance_end_line": 4,
+          "module_start_line": 1,
+          "module_end_line": 3,
+          "port_start_line": 1,
+          "port_end_line": 1,
+          "parent_port_start_line": 1,
+          "parent_port_end_line": 1,
+          "file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_turn_wire_user_use_survives_rm_hbj9wyfw\\TOP.v",
+          "module_file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_turn_wire_user_use_survives_rm_hbj9wyfw\\MID.v",
+          "start_offset": 47,
+          "end_offset": 69,
+          "connection_start_offset": 57,
+          "connection_end_offset": 67,
+          "ordinal": 0,
+          "named_ports": true,
+          "parameter_override": false,
+          "connections": {
+            "clk": "clk"
+          }
+        },
+        {
+          "module": "DST",
+          "instance": "U_DST",
+          "style": "normal",
+          "status": "normal",
+          "start_line": 5,
+          "end_line": 5,
+          "instance_start_line": 5,
+          "instance_end_line": 5,
+          "module_start_line": 1,
+          "module_end_line": 2,
+          "port_start_line": 1,
+          "port_end_line": 1,
+          "parent_port_start_line": 1,
+          "parent_port_end_line": 1,
+          "file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_turn_wire_user_use_survives_rm_hbj9wyfw\\TOP.v",
+          "module_file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_turn_wire_user_use_survives_rm_hbj9wyfw\\DST.v",
+          "start_offset": 71,
+          "end_offset": 93,
+          "connection_start_offset": 81,
+          "connection_end_offset": 91,
+          "ordinal": 1,
+          "named_ports": true,
+          "parameter_override": false,
+          "connections": {
+            "clk": "clk"
+          }
+        },
+        {
+          "module": "DST",
+          "instance": "U_UNUSED",
+          "style": "normal",
+          "status": "normal",
+          "start_line": 6,
+          "end_line": 6,
+          "instance_start_line": 6,
+          "instance_end_line": 6,
+          "module_start_line": 1,
+          "module_end_line": 2,
+          "port_start_line": 1,
+          "port_end_line": 1,
+          "parent_port_start_line": 1,
+          "parent_port_end_line": 1,
+          "file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_turn_wire_user_use_survives_rm_hbj9wyfw\\TOP.v",
+          "module_file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_turn_wire_user_use_survives_rm_hbj9wyfw\\DST.v",
+          "start_offset": 95,
+          "end_offset": 120,
+          "connection_start_offset": 108,
+          "connection_end_offset": 118,
+          "ordinal": 2,
+          "named_ports": true,
+          "parameter_override": false,
+          "connections": {
+            "clk": "clk"
+          }
+        }
+      ]
+    }
+  },
+  "input_config": {
+    "rtl_folder": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_turn_wire_user_use_survives_rm_hbj9wyfw",
+    "top": "TOP",
+    "files": [
+      "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_turn_wire_user_use_survives_rm_hbj9wyfw\\DST.v",
+      "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_turn_wire_user_use_survives_rm_hbj9wyfw\\MID.v",
+      "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_turn_wire_user_use_survives_rm_hbj9wyfw\\SRC.v",
+      "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_turn_wire_user_use_survives_rm_hbj9wyfw\\TOP.v"
+    ],
+    "include_dirs": [],
+    "defines": {}
+  },
+  "sources": {
+    "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_turn_wire_user_use_survives_rm_hbj9wyfw\\DST.v": {
+      "sha256": "57c2510cab2259f4c83b79c56524c53fce7177cbb6ed50a2d54492e324280a27",
+      "encoding": "utf-8"
+    },
+    "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_turn_wire_user_use_survives_rm_hbj9wyfw\\MID.v": {
+      "sha256": "0b438d13c7345d5a61de0fa41f3903e662d8e1b72f77e257ea992535db8dbc4b",
+      "encoding": "utf-8"
+    },
+    "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_turn_wire_user_use_survives_rm_hbj9wyfw\\SRC.v": {
+      "sha256": "87c926fc140d17ef0e27e9a17bf2b6af65652adfe3e937dbc2fa4cc5b99e2b11",
+      "encoding": "utf-8"
+    },
+    "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_turn_wire_user_use_survives_rm_hbj9wyfw\\TOP.v": {
+      "sha256": "3f358e5ca48ebcf774e20b6175d06ff99fbd654d49098bf0876666630d925d6d",
+      "encoding": "utf-8"
+    }
+  },
+  "note": "Source references only; for/generate are not expanded. style/status are normal.",
+  "_easyconnect": {
+    "connections": [],
+    "files": {},
+    "next_id": 2,
+    "new_sources": [],
+    "resources": [],
+    "generated_signals": []
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "view": "source_hierarchy",
+  "elaborated": false,
+  "frontend": {
+    "name": "EasyConnect",
+    "version": "1.0"
+  },
+  "input_config": {
+    "rtl_folder": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\_analysis_filelist\\brk",
+    "top": "TOP",
+    "files": [
+      "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\_analysis_filelist\\brk\\TOP.v"
+    ],
+    "include_dirs": [],
+    "defines": {}
+  },
+  "roots": [
+    "TOP"
+  ],
+  "modules": {
+    "TOP": {
+      "file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\_analysis_filelist\\brk\\TOP.v",
+      "start_line": 401,
+      "end_line": 403,
+      "port_start_line": 401,
+      "port_end_line": 401,
+      "instantiations": []
+    }
+  },
+  "sources": {
+    "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\_analysis_filelist\\brk\\TOP.v": {
+      "sha256": "3b2649b43aaa25d3aee371c502d550e74bb4e2a9521410dc8457ce8227ee00eb",
+      "encoding": "utf-8-sig"
+    }
+  },
+  "note": "Source references only; for/generate are not identified or expanded. style/status are normal."
+}

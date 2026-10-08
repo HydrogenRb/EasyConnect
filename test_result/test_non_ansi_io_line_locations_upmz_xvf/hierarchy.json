@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0",
+  "view": "source_hierarchy",
+  "elaborated": false,
+  "frontend": {
+    "name": "EasyConnect",
+    "version": "1.0"
+  },
+  "roots": [
+    "TOP"
+  ],
+  "modules": {
+    "TOP": {
+      "file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_non_ansi_io_line_locations_upmz_xvf\\TOP.v",
+      "start_line": 1,
+      "end_line": 4,
+      "port_start_line": 2,
+      "port_end_line": 3,
+      "ports": [
+        "a",
+        "b"
+      ],
+      "instantiations": []
+    }
+  },
+  "input_config": {
+    "rtl_folder": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_non_ansi_io_line_locations_upmz_xvf",
+    "top": "TOP",
+    "files": [
+      "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_non_ansi_io_line_locations_upmz_xvf\\TOP.v"
+    ],
+    "include_dirs": [],
+    "defines": {}
+  },
+  "sources": {
+    "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_non_ansi_io_line_locations_upmz_xvf\\TOP.v": {
+      "sha256": "9bf1641a073b889e12ce5fcb0faf54bde67cca66490fd14ab1cfa0c8340e9a31",
+      "encoding": "utf-8"
+    }
+  },
+  "note": "Source references only; for/generate are not expanded. style/status are normal."
+}

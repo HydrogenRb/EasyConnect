@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.0",
+  "view": "source_hierarchy",
+  "elaborated": false,
+  "frontend": {
+    "name": "EasyConnect",
+    "version": "1.0"
+  },
+  "input_config": {
+    "rtl_folder": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\_analysis_filelist\\g\\rtl",
+    "top": "TOP",
+    "files": [
+      "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\_analysis_filelist\\g\\rtl\\TOP.v",
+      "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\_analysis_filelist\\g\\shared\\lib_cells.v"
+    ],
+    "include_dirs": [],
+    "defines": {}
+  },
+  "roots": [
+    "TOP"
+  ],
+  "modules": {
+    "TOP": {
+      "file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\_analysis_filelist\\g\\rtl\\TOP.v",
+      "start_line": 1,
+      "end_line": 3,
+      "port_start_line": 1,
+      "port_end_line": 1,
+      "instantiations": [
+        {
+          "module": "LIB_CELL",
+          "instance": "U",
+          "style": "normal",
+          "status": "normal",
+          "start_line": 2,
+          "end_line": 2,
+          "instance_start_line": 2,
+          "instance_end_line": 2,
+          "module_start_line": 1,
+          "module_end_line": 2,
+          "port_start_line": 1,
+          "port_end_line": 1,
+          "parent_port_start_line": 1,
+          "parent_port_end_line": 1,
+          "file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\_analysis_filelist\\g\\rtl\\TOP.v",
+          "module_file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\_analysis_filelist\\g\\shared\\lib_cells.v",
+          "start_offset": 24,
+          "end_offset": 46,
+          "connection_start_offset": 34,
+          "connection_end_offset": 44,
+          "ordinal": 0,
+          "named_ports": true,
+          "parameter_override": false
+        }
+      ]
+    },
+    "LIB_CELL": {
+      "file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\_analysis_filelist\\g\\shared\\lib_cells.v",
+      "start_line": 1,
+      "end_line": 2,
+      "port_start_line": 1,
+      "port_end_line": 1,
+      "instantiations": []
+    }
+  },
+  "sources": {
+    "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\_analysis_filelist\\g\\rtl\\TOP.v": {
+      "sha256": "78f7ad1e57883897d8407f0ceace78e7ea1b81cc065cf92fb51596c893cecd20",
+      "encoding": "utf-8-sig"
+    },
+    "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\_analysis_filelist\\g\\shared\\lib_cells.v": {
+      "sha256": "b739fb0a902b9d8b842ef2c7783cd52f740d8599052ee83da670d423a097248a",
+      "encoding": "utf-8-sig"
+    }
+  },
+  "note": "Source references only; for/generate are not identified or expanded. style/status are normal."
+}

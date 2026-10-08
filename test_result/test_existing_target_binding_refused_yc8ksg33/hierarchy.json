@@ -1,0 +1,205 @@
+{
+  "schema_version": "1.0",
+  "view": "source_hierarchy",
+  "elaborated": false,
+  "frontend": {
+    "name": "EasyConnect",
+    "version": "1.0"
+  },
+  "roots": [
+    "TOP"
+  ],
+  "modules": {
+    "DST": {
+      "file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_existing_target_binding_refused_yc8ksg33\\DST.v",
+      "start_line": 1,
+      "end_line": 1,
+      "port_start_line": 1,
+      "port_end_line": 1,
+      "ports": [
+        "clk",
+        "recv"
+      ],
+      "instantiations": []
+    },
+    "MID": {
+      "file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_existing_target_binding_refused_yc8ksg33\\MID.v",
+      "start_line": 1,
+      "end_line": 3,
+      "port_start_line": 1,
+      "port_end_line": 1,
+      "ports": [
+        "clk"
+      ],
+      "instantiations": [
+        {
+          "module": "SRC",
+          "instance": "U_SRC",
+          "style": "normal",
+          "status": "normal",
+          "start_line": 2,
+          "end_line": 2,
+          "instance_start_line": 2,
+          "instance_end_line": 2,
+          "module_start_line": 1,
+          "module_end_line": 2,
+          "port_start_line": 1,
+          "port_end_line": 1,
+          "parent_port_start_line": 1,
+          "parent_port_end_line": 1,
+          "file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_existing_target_binding_refused_yc8ksg33\\MID.v",
+          "module_file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_existing_target_binding_refused_yc8ksg33\\SRC.v",
+          "start_offset": 30,
+          "end_offset": 52,
+          "connection_start_offset": 40,
+          "connection_end_offset": 50,
+          "ordinal": 0,
+          "named_ports": true,
+          "parameter_override": false,
+          "connections": {
+            "clk": "clk"
+          }
+        }
+      ]
+    },
+    "SRC": {
+      "file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_existing_target_binding_refused_yc8ksg33\\SRC.v",
+      "start_line": 1,
+      "end_line": 2,
+      "port_start_line": 1,
+      "port_end_line": 1,
+      "ports": [
+        "clk"
+      ],
+      "instantiations": []
+    },
+    "TOP": {
+      "file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_existing_target_binding_refused_yc8ksg33\\TOP.v",
+      "start_line": 1,
+      "end_line": 5,
+      "port_start_line": 1,
+      "port_end_line": 1,
+      "ports": [
+        "clk"
+      ],
+      "instantiations": [
+        {
+          "module": "MID",
+          "instance": "U_MID",
+          "style": "normal",
+          "status": "normal",
+          "start_line": 2,
+          "end_line": 2,
+          "instance_start_line": 2,
+          "instance_end_line": 2,
+          "module_start_line": 1,
+          "module_end_line": 3,
+          "port_start_line": 1,
+          "port_end_line": 1,
+          "parent_port_start_line": 1,
+          "parent_port_end_line": 1,
+          "file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_existing_target_binding_refused_yc8ksg33\\TOP.v",
+          "module_file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_existing_target_binding_refused_yc8ksg33\\MID.v",
+          "start_offset": 30,
+          "end_offset": 52,
+          "connection_start_offset": 40,
+          "connection_end_offset": 50,
+          "ordinal": 0,
+          "named_ports": true,
+          "parameter_override": false,
+          "connections": {
+            "clk": "clk"
+          }
+        },
+        {
+          "module": "DST",
+          "instance": "U_DST",
+          "style": "normal",
+          "status": "normal",
+          "start_line": 3,
+          "end_line": 3,
+          "instance_start_line": 3,
+          "instance_end_line": 3,
+          "module_start_line": 1,
+          "module_end_line": 1,
+          "port_start_line": 1,
+          "port_end_line": 1,
+          "parent_port_start_line": 1,
+          "parent_port_end_line": 1,
+          "file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_existing_target_binding_refused_yc8ksg33\\TOP.v",
+          "module_file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_existing_target_binding_refused_yc8ksg33\\DST.v",
+          "start_offset": 54,
+          "end_offset": 88,
+          "connection_start_offset": 64,
+          "connection_end_offset": 86,
+          "ordinal": 1,
+          "named_ports": true,
+          "parameter_override": false,
+          "connections": {
+            "clk": "clk",
+            "recv": "clk"
+          }
+        },
+        {
+          "module": "DST",
+          "instance": "U_UNUSED",
+          "style": "normal",
+          "status": "normal",
+          "start_line": 4,
+          "end_line": 4,
+          "instance_start_line": 4,
+          "instance_end_line": 4,
+          "module_start_line": 1,
+          "module_end_line": 1,
+          "port_start_line": 1,
+          "port_end_line": 1,
+          "parent_port_start_line": 1,
+          "parent_port_end_line": 1,
+          "file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_existing_target_binding_refused_yc8ksg33\\TOP.v",
+          "module_file": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_existing_target_binding_refused_yc8ksg33\\DST.v",
+          "start_offset": 90,
+          "end_offset": 115,
+          "connection_start_offset": 103,
+          "connection_end_offset": 113,
+          "ordinal": 2,
+          "named_ports": true,
+          "parameter_override": false,
+          "connections": {
+            "clk": "clk"
+          }
+        }
+      ]
+    }
+  },
+  "input_config": {
+    "rtl_folder": "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_existing_target_binding_refused_yc8ksg33",
+    "top": "TOP",
+    "files": [
+      "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_existing_target_binding_refused_yc8ksg33\\DST.v",
+      "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_existing_target_binding_refused_yc8ksg33\\MID.v",
+      "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_existing_target_binding_refused_yc8ksg33\\SRC.v",
+      "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_existing_target_binding_refused_yc8ksg33\\TOP.v"
+    ],
+    "include_dirs": [],
+    "defines": {}
+  },
+  "sources": {
+    "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_existing_target_binding_refused_yc8ksg33\\DST.v": {
+      "sha256": "6e6dfb1e70b04f7e3e0560e8300a9fae5005b8c318a651c9794251e47785ce30",
+      "encoding": "utf-8"
+    },
+    "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_existing_target_binding_refused_yc8ksg33\\MID.v": {
+      "sha256": "0b438d13c7345d5a61de0fa41f3903e662d8e1b72f77e257ea992535db8dbc4b",
+      "encoding": "utf-8"
+    },
+    "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_existing_target_binding_refused_yc8ksg33\\SRC.v": {
+      "sha256": "87c926fc140d17ef0e27e9a17bf2b6af65652adfe3e937dbc2fa4cc5b99e2b11",
+      "encoding": "utf-8"
+    },
+    "C:\\Users\\HydrogenRb\\HydrogenRb\\Work\\tech\\Agent\\9_24 research\\connecter_research\\test_result\\test_existing_target_binding_refused_yc8ksg33\\TOP.v": {
+      "sha256": "0eb624e0aed0b357bded5102a6081137060b1733256928f14d5210dd122b6815",
+      "encoding": "utf-8"
+    }
+  },
+  "note": "Source references only; for/generate are not expanded. style/status are normal."
+}

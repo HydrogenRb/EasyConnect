@@ -1,17 +1,18 @@
-"""EasyConnect 1.0 RTL source graph, using only the Python standard library.
+"""Offline RTL graph: collect modules, then regex-search each file for instances.
 
-This is a source graph, not an elaborator: generate bodies and instance array
-suffixes are retained once, exactly as written. Offsets always refer to the
-original file, including comments and CRLFs.
+Only headers, declarations and connection lists are parsed. Source offsets
+always refer to the original file, including comments, encoding and CRLFs.
 """
 import ast
 import hashlib
 import json
+import operator
 import os
 from pathlib import Path
 import re
 import tempfile
-from dataclasses import dataclass, field
+from collections import namedtuple
+from types import SimpleNamespace
 
 
 class EasyConnectError(Exception):
@@ -23,16 +24,16 @@ def digest(data):
 
 
 def read_source(path):
-    raw = Path(path).read_bytes()
-    if raw.startswith(b"\xef\xbb\xbf"):
-        return raw.decode("utf-8-sig"), "utf-8-sig"
     try:
-        return raw.decode("utf-8"), "utf-8"
-    except UnicodeDecodeError:
-        try:
-            return raw.decode("gb18030"), "gb18030"
-        except UnicodeDecodeError as exc:
-            raise EasyConnectError("无法读取源码编码: %s" % path) from exc
+        raw = Path(path).read_bytes()
+        for encoding in ("utf-8-sig",) if raw.startswith(b"\xef\xbb\xbf") else ("utf-8", "gb18030"):
+            try:
+                return raw.decode(encoding), encoding
+            except UnicodeDecodeError:
+                continue
+    except OSError as exc:
+        raise EasyConnectError("无法读取源码 %s: %s" % (path, exc)) from exc
+    raise EasyConnectError("无法读取源码编码: %s" % path)
 
 
 def json_bytes(value):
@@ -55,10 +56,8 @@ def atomic_write(path, data):
 
 
 def protected(path):
-    """The checked-in golden cases are never an editing destination."""
-    golden = Path(__file__).resolve().parent / "test_cases"
     try:
-        Path(path).resolve().relative_to(golden)
+        Path(path).resolve().relative_to(Path(__file__).resolve().parent / "test_cases")
         return True
     except ValueError:
         return False
@@ -68,508 +67,387 @@ def blank(text):
     return re.sub(r"[^\r\n]", " ", text)
 
 
-COMMENT_STRING = re.compile(r'//[^\r\n]*|/\*[\s\S]*?\*/|"(?:\\.|[^"\\])*"')
+COMMENT_STRING = re.compile(r'\\[^\s]+|//[^\r\n]*|/\*[\s\S]*?\*/|"(?:\\[\s\S]|[^"\\])*"|\(\*(?!\))[\s\S]*?\*\)')
 
 
 def mask_comments(text, strings=False):
-    return COMMENT_STRING.sub(
-        lambda m: blank(m.group()) if strings or not m.group().startswith('"') else m.group(), text)
+    return COMMENT_STRING.sub(lambda m: blank(m.group()) if m.group().startswith(("//", "/*", "(*"))
+                             or strings and m.group().startswith('"') else m.group(), text)
 
 
-@dataclass
-class Token:
-    value: str
-    start: int
-    end: int
+def line_column(text, position):
+    return text.count("\n", 0, position) + 1, position - text.rfind("\n", 0, position)
 
 
-TOKEN = re.compile(r'"(?:\\.|[^"\\])*"|\\[^\s]+|`?[A-Za-z_$][\w$]*|'
-                   r"\d+(?:'[sS]?[bBoOdDhH][0-9a-fA-F_xXzZ?]+)?|"
-                   r"'?[01xXzZ]|<=|>=|==|!=|\+:|-:|::|<<|>>|[^\s]")
+def snippet(text, position, radius=0, width=160):
+    line, column = line_column(text, position)
+    lines, result = text.split("\n"), []
+    left = max(0, column - width // 2)
+    for number in range(max(1, line - radius), min(len(lines), line + radius) + 1):
+        prefix = "%d | " % number
+        result.append(prefix + lines[number - 1].rstrip("\r")[left:left + width].expandtabs(4))
+        if number == line:
+            result.append(" " * (len(prefix) + len(lines[number - 1][left:column - 1].expandtabs(4))) + "^")
+    return result
 
 
-def tokenize(text):
-    return [Token(m.group(), m.start(), m.end()) for m in TOKEN.finditer(text)]
+def source_error(text, path, position, message, module=""):
+    line, column = line_column(text, position)
+    location = "%s:%d:%d%s" % (path, line, column, " [module %s]" % module if module else "")
+    raise EasyConnectError("%s: %s\n%s" % (location, message, "\n".join(snippet(text, position))))
 
 
-def pairs(tokens):
+ID = r"(?:[A-Za-z_$][\w$]*|\\[^\s]+)"
+Token = namedtuple("Token", "value start end")
+TOKEN = re.compile(r'"(?:\\[\s\S]|[^"\\])*"|\\[^\s]+|\x60?[A-Za-z_$][\w$]*|'
+                   r"\d+(?:'[sS]?[bBoOdDhH][0-9a-fA-F_xXzZ?]+)?|'?[01xXzZ]|"
+                   r"<=|>=|==|!=|\+:|-:|::|<<|>>|[^\s]")
+
+
+def tokenize(text, start=0, end=None):
+    return [Token(m.group(), m.start(), m.end()) for m in TOKEN.finditer(text, start, len(text) if end is None else end)]
+
+
+def pairs(tokens, text="", path="<表达式>", module="", first_group=False):
     result, stack = {}, []
     for index, token in enumerate(tokens):
         if token.value in ("(", "[", "{"):
-            stack.append(index)
+            stack.append((index, token))
         elif token.value in (")", "]", "}"):
-            if not stack or tokens[stack[-1]].value != {")": "(", "]": "[", "}": "{"}[token.value]:
-                raise EasyConnectError("括号不匹配，源码字符位置 %d" % token.start)
-            opening = stack.pop()
+            if not stack or stack[-1][1].value != {")": "(", "]": "[", "}": "{"}[token.value]:
+                source_error(text, path, token.start, "括号不匹配: %s" % token.value, module)
+            opening, _ = stack.pop()
             result[opening] = index
+            if first_group and not stack:
+                return token.start
     if stack:
-        raise EasyConnectError("括号未闭合，源码字符位置 %d" % tokens[stack[-1]].start)
+        source_error(text, path, stack[-1][1].start, "括号未闭合: %s" % stack[-1][1].value, module)
     return result
 
 
 def split_tokens(tokens, delimiter=","):
-    groups, current, depth = [], [], 0
-    for token in tokens:
+    groups, start, depth = [], 0, 0
+    for index, token in enumerate(tokens):
         if token.value == delimiter and depth == 0:
-            groups.append(current)
-            current = []
-        else:
-            current.append(token)
-            depth += token.value in ("(", "[", "{")
-            depth -= token.value in (")", "]", "}")
-    if current:
-        groups.append(current)
-    return groups
+            groups.append(tokens[start:index])
+            start = index + 1
+        depth += token.value in ("(", "[", "{")
+        depth -= token.value in (")", "]", "}")
+    return groups + [tokens[start:]]
 
 
 def split_expressions(text):
-    tokens = tokenize(text)
-    return [text[group[0].start:group[-1].end].strip() for group in split_tokens(tokens) if group]
+    return [text[g[0].start:g[-1].end].strip() for g in split_tokens(tokenize(mask_comments(text))) if g]
 
 
-@dataclass
-class Declaration:
-    name: str
-    direction: str
-    kind: str
-    ranges: tuple
-    unpacked: bool = False
-    initialized: bool = False
+Declaration = namedtuple("Declaration", "name direction kind ranges unpacked initialized", defaults=(False, False))
 
 
-@dataclass
-class Instance:
-    module: str
-    name: str
-    start: int
-    end: int
-    opening: int
-    closing: int
-    parameters: str = ""
-    named: bool = True
-    bindings: dict = field(default_factory=dict)
-    ordinal: int = 0
-
-
-@dataclass
-class Module:
-    name: str
-    file: str
-    text: str
-    masked: str
-    start: int
-    end: int
-    header_end: int
-    opening: object
-    closing: object
-    ansi: bool
-    declarations: dict = field(default_factory=dict)
-    instances: list = field(default_factory=list)
-    parameters: dict = field(default_factory=dict)
-    io_start: object = None
-    io_end: object = None
-
+class Module(SimpleNamespace):
     @property
     def newline(self):
         return "\r\n" if "\r\n" in self.text else "\n"
 
     def line(self, position):
-        return self.text.count("\n", 0, position) + 1
+        return line_column(self.text, position)[0]
 
 
-IDENTIFIER = re.compile(r"^[A-Za-z_$][\w$]*$")
 DIRECTIONS = {"input", "output", "inout"}
-TYPES = {"wire", "reg", "logic", "bit", "tri", "uwire", "integer", "int", "signed", "unsigned"}
+TYPES = {"wire", "reg", "logic", "bit", "tri", "uwire", "integer", "int", "signed", "unsigned", "var"}
+DIRECTIVE = re.compile(r"(?m)^[ \t]*\x60(include|define|undef|ifdef|ifndef|else|elsif|endif|timescale|default_nettype|resetall|celldefine|endcelldefine)\b(?:[^\r\n]*?\\\r?\n)*[^\r\n]*")
+MODULE_BOUNDARY = re.compile(r"\\\S+|(?P<keyword>(?<![\w$\x60])(?:module\b|endmodule\b))")
+MODULE_NAME = re.compile(r"\s+(?:(?:automatic|static)\s+)?(" + ID + r")")
+INSTANCE_TYPE = re.compile(r"(?<![\w$\x60])" + ID + r"(?![\w$])")
+INSTANCE_NAME = re.compile(r"\s*(" + ID + r")\s*")
+PARAMETER_LIST = re.compile(r"\s*#\s*(\()")
+INSTANCE_TAIL = re.compile(r"\s*([,;])")
+WHITESPACE = re.compile(r"\s*")
+DECLARATION = re.compile(r"(?<![\w$\x60\\])(?:" + "|".join(sorted(DIRECTIONS | TYPES | {"parameter", "localparam"})) + r")\b[^;]*;")
+DECLARATOR = re.compile(r"\s*((?:(?:" + "|".join(sorted(DIRECTIONS | TYPES)) + r")\s+)*)(\s*(?:\[[^\]]*\]\s*)*)(" + ID + r")")
 
 
 def parse_declarations(tokens, text, ansi=False):
-    result = {}
-    direction, kind, ranges = "", "wire", ()
+    result, direction, kind, ranges = {}, "", "wire", ()
     for group in split_tokens(tokens):
         if not group:
             continue
-        fresh = group[0].value in DIRECTIONS or group[0].value in TYPES
-        if fresh:
-            direction = group[0].value if group[0].value in DIRECTIONS else ""
-            kind = next((t.value for t in group if t.value in TYPES and t.value not in ("signed", "unsigned")), "wire")
-            ranges = ()
-        elif not ansi and not result:
+        value = mask_comments(text[group[0].start:group[-1].end])
+        match = DECLARATOR.match(value)
+        if not match or not (match[1] or ansi or result):
             continue
-        index = 0
-        local_ranges = []
-        while index < len(group) and (group[index].value in DIRECTIONS or group[index].value in TYPES):
-            index += 1
-        while index < len(group) and group[index].value == "[":
-            close = index + 1
-            while close < len(group) and group[close].value != "]":
-                close += 1
-            if close == len(group):
-                break
-            local_ranges.append(text[group[index].end:group[close].start].strip())
-            index = close + 1
-        if fresh:
-            ranges = tuple(local_ranges)
-        if index >= len(group) or not IDENTIFIER.fullmatch(group[index].value):
-            continue
-        name = group[index].value
-        result[name] = Declaration(name, direction, kind, ranges,
-                                   index + 1 < len(group) and group[index + 1].value == "[",
-                                   any(t.value == "=" for t in group[index + 1:]))
+        if match[1]:
+            qualifiers = match[1].split()
+            direction = next((q for q in qualifiers if q in DIRECTIONS), "")
+            kind = next((q for q in qualifiers if q in TYPES - {"signed", "unsigned", "var"}), "wire")
+            ranges = tuple(re.findall(r"\[([^\]]*)\]", match[2]))
+        tail = value[match.end():]
+        result[match[3]] = Declaration(match[3], direction, kind, ranges, bool(re.match(r"\s*\[", tail)), "=" in tail)
     return result
 
 
+def group_end(mod, opening):
+    tokens = (Token(m.group(), m.start(), m.end()) for m in TOKEN.finditer(mod.masked, opening, mod.end - 9))
+    return pairs(tokens, mod.text, mod.file, mod.name, first_group=True)
+
+
 def parse_file(path, text, processed=None):
-    masked = mask_comments(text) if processed is None else mask_comments(processed)
-    # No macro expansion is performed. Directive bodies cannot be declarations.
-    masked = re.sub(r"(?m)^[ \t]*`(?:include|define|undef|ifdef|ifndef|else|elsif|endif|timescale|default_nettype|resetall|celldefine|endcelldefine)\b[^\r\n]*(?:\\\r?\n[^\r\n]*)*", lambda m: blank(m.group()), masked)
-    tokens = tokenize(masked)
-    matching = pairs(tokens)
-    modules, index = [], 0
-    while index < len(tokens):
-        if tokens[index].value != "module":
-            index += 1
-            continue
-        start_index = index
-        index += 1
-        if index < len(tokens) and tokens[index].value in ("automatic", "static"):
-            index += 1
-        if index >= len(tokens) or not IDENTIFIER.fullmatch(tokens[index].value):
-            raise EasyConnectError("不支持的 module 声明: %s" % path)
-        name = tokens[index].value
-        index += 1
-        param_groups = []
-        if index < len(tokens) and tokens[index].value == "#":
-            index += 1
-            if tokens[index].value != "(":
-                raise EasyConnectError("无法定位参数列表: " + name)
-            close = matching[index]
-            param_groups.extend(split_tokens(tokens[index + 1:close]))
-            index = close + 1
-        opening = closing = None
-        header_tokens = []
-        if tokens[index].value == "(":
-            close = matching[index]
-            opening, closing = tokens[index].start, tokens[close].start
-            header_tokens = tokens[index + 1:close]
-            index = close + 1
-        if tokens[index].value != ";":
-            raise EasyConnectError("无法定位 module 端口列表: " + name)
-        header_end = tokens[index].end
-        body_start = index + 1
-        ending = body_start
-        while ending < len(tokens) and tokens[ending].value != "endmodule":
-            ending += 1
-        if ending == len(tokens):
-            raise EasyConnectError("缺少 endmodule: " + name)
-        ansi = any(t.value in DIRECTIONS for t in header_tokens) or not header_tokens
-        mod = Module(name, str(Path(path).resolve()), text, masked,
-                     tokens[start_index].start, tokens[ending].end, header_end,
-                     opening, closing, ansi)
-        mod.io_start = opening if opening is not None else mod.start
-        mod.io_end = closing if closing is not None else header_end
-        if ansi:
-            mod.declarations.update(parse_declarations(header_tokens, text, True))
-        scan = body_start
-        scope = 0
-        while scan < ending:
-            value = tokens[scan].value
-            if value in ("function", "task"):
-                scope += 1
-            elif value in ("endfunction", "endtask"):
-                scope -= 1
-            if not scope and value in DIRECTIONS | TYPES:
-                finish = scan
-                while finish < ending and tokens[finish].value != ";":
-                    finish += 1
-                decls = parse_declarations(tokens[scan:finish], text)
-                if not ansi and value in DIRECTIONS:
-                    if mod.io_start == opening: mod.io_start = tokens[scan].start
-                    mod.io_end = tokens[finish].end
-                for key, decl in decls.items():
-                    if key in mod.declarations:
-                        previous = mod.declarations[key]
-                        # Non-ANSI output followed by a separate reg declaration.
-                        if previous.direction and not decl.direction:
-                            decl.direction = previous.direction
-                    mod.declarations[key] = decl
-                scan = finish
-            if not scope and value in ("parameter", "localparam"):
-                finish = scan
-                while finish < ending and tokens[finish].value != ";":
-                    finish += 1
-                param_groups.extend(split_tokens(tokens[scan + 1:finish]))
-            scan += 1
-        for group in param_groups:
-            equal = next((i for i, t in enumerate(group) if t.value == "="), None)
-            if equal is not None and equal > 0 and equal + 1 < len(group):
-                mod.parameters[group[equal - 1].value] = text[group[equal + 1].start:group[-1].end]
-        # First pass stores candidate statements; known-module filtering follows.
-        scan = body_start
-        while scan < ending:
-            if not IDENTIFIER.fullmatch(tokens[scan].value):
-                scan += 1
+    lexical = mask_comments(text if processed is None else processed)
+    masked = mask_comments(text if processed is None else processed, strings=True)
+    masked = DIRECTIVE.sub(lambda m: blank(m.group()), masked)
+    boundaries, modules = [m for m in MODULE_BOUNDARY.finditer(masked) if m.lastgroup], []
+    for index in range(0, len(boundaries), 2):
+        start = boundaries[index]
+        name = MODULE_NAME.match(masked, start.end())
+        if start.group() != "module" or name is None:
+            source_error(text, path, start.start(), "无法识别 module 声明")
+        if index + 1 == len(boundaries) or boundaries[index + 1].group() != "endmodule":
+            source_error(text, path, start.start(), "缺少 endmodule", name[1])
+        header_end = masked.find(";", name.end(), boundaries[index + 1].start())
+        if header_end < 0:
+            source_error(text, path, start.start(), "module 声明缺少分号", name[1])
+        mod = Module(name=name[1], file=str(Path(path).resolve()), text=text, masked=masked,
+                     start=start.start(), end=boundaries[index + 1].end(), header_end=header_end + 1,
+                     opening=None, closing=None, ansi=True, declarations={}, instances=[], parameters={})
+        header, parameters, cursor = tokenize(lexical, name.end(), header_end), [], 0
+        matching = pairs(header, text, mod.file, mod.name)
+        if header and header[0].value == "#" and len(header) > 1 and header[1].value == "(":
+            cursor = matching[1] + 1
+            parameters.extend(split_tokens(header[2:cursor - 1]))
+        if cursor < len(header) and header[cursor].value == "(":
+            closing = matching[cursor]
+            mod.opening, mod.closing = header[cursor].start, header[closing].start
+            ports = header[cursor + 1:closing]
+            mod.ansi = any(t.value in DIRECTIONS for t in ports) or not ports
+            if mod.ansi:
+                mod.declarations.update(parse_declarations(ports, text, True))
+            cursor = closing + 1
+        if cursor != len(header):
+            source_error(text, mod.file, header[cursor].start, "无法识别 module 参数或端口列表", mod.name)
+        mod.io_start = mod.opening if mod.opening is not None else mod.start
+        mod.io_end = mod.closing if mod.closing is not None else header_end
+        body = re.sub(r"\b(function|task)\b[\s\S]*?\bend\1\b", lambda m: blank(m.group()), masked[mod.header_end:mod.end - 9])
+        io_lines = []
+        for match in DECLARATION.finditer(body):
+            left, right = mod.header_end + match.start(), mod.header_end + match.end()
+            tokens = tokenize(lexical, left, right - 1)
+            if tokens[0].value in ("parameter", "localparam"):
+                parameters.extend(split_tokens(tokens[1:]))
                 continue
-            statement_start, type_name = tokens[scan].start, tokens[scan].value
-            cursor, parameters = scan + 1, ""
-            if cursor < ending and tokens[cursor].value == "#":
-                cursor += 1
-                if tokens[cursor].value != "(":
-                    scan += 1
-                    continue
-                close = matching[cursor]
-                parameters = text[tokens[cursor].end:tokens[close].start]
-                cursor = close + 1
-            candidates = []
-            while cursor + 1 < ending and IDENTIFIER.fullmatch(tokens[cursor].value):
-                name_start = cursor
-                cursor += 1
-                while cursor < ending and tokens[cursor].value == "[":
-                    cursor = matching[cursor] + 1
-                inst_name = re.sub(r"\s+", "", text[tokens[name_start].start:tokens[cursor - 1].end])
-                if tokens[cursor].value != "(":
-                    break
-                close = matching[cursor]
-                groups = split_tokens(tokens[cursor + 1:close])
-                named, bindings = True, {}
-                for group in groups:
-                    if not group:
-                        continue
-                    if len(group) < 4 or group[0].value != "." or group[2].value != "(" or group[-1].value != ")":
-                        named = False
-                        continue
-                    port = group[1].value
-                    if port in bindings:
-                        raise EasyConnectError("重复例化端口 %s.%s: %s" % (inst_name, port, path))
-                    bindings[port] = (text[group[2].end:group[-1].start].strip(), group[2].end, group[-1].start)
-                candidates.append(Instance(type_name, inst_name, statement_start,
-                                           tokens[close].end, tokens[cursor].start,
-                                           tokens[close].start, parameters, named, bindings))
-                cursor = close + 1
-                if cursor < ending and tokens[cursor].value == ",":
-                    cursor += 1
-                    continue
-                break
-            if candidates and cursor < ending and tokens[cursor].value == ";":
-                for inst in candidates:
-                    inst.end = tokens[cursor].end
-                    mod.instances.append(inst)
-                scan = cursor + 1
-            else:
-                scan += 1
+            for key, decl in parse_declarations(tokens, text).items():
+                if key in mod.declarations and not decl.direction:
+                    decl = decl._replace(direction=mod.declarations[key].direction)
+                mod.declarations[key] = decl
+            if not mod.ansi and tokens[0].value in DIRECTIONS:
+                io_lines.append((left, right - 1))
+        if io_lines:
+            mod.io_start, mod.io_end = io_lines[0][0], io_lines[-1][1]
+        for group in parameters:
+            equal = next((i for i, t in enumerate(group) if t.value == "="), 0)
+            if 0 < equal < len(group) - 1:
+                mod.parameters[group[equal - 1].value] = text[group[equal + 1].start:group[-1].end]
         modules.append(mod)
-        index = ending + 1
     return modules
 
 
+def parse_instances(mod, names):
+    instances, consumed = [], mod.header_end
+    for match in INSTANCE_TYPE.finditer(mod.masked, mod.header_end, mod.end - 9):
+        if match.group() not in names or match.start() < consumed:
+            continue
+        cursor, parameters, candidates = match.end(), "", []
+        parameter = PARAMETER_LIST.match(mod.masked, cursor, mod.end - 9)
+        if parameter:
+            opening = parameter.start(1)
+            closing = group_end(mod, opening)
+            parameters, cursor = mod.text[opening + 1:closing], closing + 1
+        while True:
+            name = INSTANCE_NAME.match(mod.masked, cursor, mod.end - 9)
+            if not name:
+                if candidates or parameter:
+                    source_error(mod.text, mod.file, cursor, "例化缺少实例名", mod.name)
+                break
+            name_start, cursor = name.start(1), name.end()
+            while mod.masked[cursor:cursor + 1] == "[":
+                cursor = group_end(mod, cursor) + 1
+                cursor = WHITESPACE.match(mod.masked, cursor, mod.end - 9).end()
+            if mod.masked[cursor:cursor + 1] != "(":
+                break
+            closing, bindings, named = group_end(mod, cursor), {}, True
+            for group in split_tokens(tokenize(mod.masked, cursor + 1, closing)):
+                if not group:
+                    continue
+                if len(group) < 4 or group[0].value != "." or group[2].value != "(" or group[-1].value != ")":
+                    named = False
+                    continue
+                port = group[1].value
+                if port in bindings:
+                    source_error(mod.text, mod.file, group[1].start, "重复例化端口: " + port, mod.name)
+                bindings[port] = (mod.text[group[2].end:group[-1].start].strip(), group[2].end, group[-1].start)
+            inst_name = re.sub(r"\s+", "", mod.masked[name_start:cursor])
+            candidates.append(SimpleNamespace(module=match.group(), name=inst_name, start=match.start(),
+                              end=closing + 1, opening=cursor, closing=closing, parameters=parameters, named=named, bindings=bindings))
+            tail = INSTANCE_TAIL.match(mod.masked, closing + 1, mod.end - 9)
+            if not tail:
+                source_error(mod.text, mod.file, closing + 1, "例化列表后缺少逗号或分号", mod.name)
+            cursor = tail.end()
+            if tail[1] == ";":
+                for inst in candidates:
+                    inst.end, inst.ordinal = cursor, len(instances)
+                    instances.append(inst)
+                consumed = cursor
+                break
+    return instances
+
+
 def constant(expression, environment=None, depth=0):
-    """Evaluate only a small, bounded integer grammar; never eval RTL text."""
+    """Evaluate bounded integer expressions without executing RTL text."""
     if depth > 20:
         return None
-    environment = environment or {}
-    value = expression.strip()
-    value = re.sub(r"`([A-Za-z_]\w*)", r"\1", value)
-    def literal(match):
-        try:
-            return str(int(match.group(2).replace("_", ""), {"b": 2, "o": 8, "d": 10, "h": 16}[match.group(1).lower()]))
-        except ValueError:
-            return match.group()
-    value = re.sub(r"\d+'[sS]?([bBoOdDhH])([\da-fA-F_]+)", literal, value)
-    try:
-        tree = ast.parse(value, mode="eval")
-        count = [0]
-        def visit(node):
-            count[0] += 1
-            if count[0] > 100:
-                raise ValueError()
-            if isinstance(node, ast.Constant) and type(node.value) is int:
-                return node.value
-            if isinstance(node, ast.Name) and node.id in environment:
-                result = constant(str(environment[node.id]), environment, depth + 1)
-                if result is None:
-                    raise ValueError()
+    operations = {ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul,
+                  ast.Div: operator.floordiv, ast.FloorDiv: operator.floordiv, ast.Mod: operator.mod,
+                  ast.LShift: operator.lshift, ast.RShift: operator.rshift,
+                  ast.BitAnd: operator.and_, ast.BitOr: operator.or_, ast.BitXor: operator.xor,
+                  ast.UAdd: operator.pos, ast.USub: operator.neg, ast.Invert: operator.invert}
+    def visit(node):
+        if isinstance(node, ast.Constant) and type(node.value) is int:
+            return node.value
+        if isinstance(node, ast.Name) and node.id in (environment or {}):
+            result = constant(str(environment[node.id]), environment, depth + 1)
+            if result is not None:
                 return result
-            if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.UAdd, ast.USub, ast.Invert)):
-                number = visit(node.operand)
-                return number if isinstance(node.op, ast.UAdd) else -number if isinstance(node.op, ast.USub) else ~number
-            if isinstance(node, ast.BinOp):
-                left, right = visit(node.left), visit(node.right)
-                if max(abs(left), abs(right)) > 10**12:
-                    raise ValueError()
-                if isinstance(node.op, ast.Add): return left + right
-                if isinstance(node.op, ast.Sub): return left - right
-                if isinstance(node.op, ast.Mult): return left * right
-                if isinstance(node.op, (ast.Div, ast.FloorDiv)): return left // right
-                if isinstance(node.op, ast.Mod): return left % right
-                if isinstance(node.op, ast.LShift) and 0 <= right < 64: return left << right
-                if isinstance(node.op, ast.RShift) and 0 <= right < 64: return left >> right
-                if isinstance(node.op, ast.BitAnd): return left & right
-                if isinstance(node.op, ast.BitOr): return left | right
-                if isinstance(node.op, ast.BitXor): return left ^ right
-            raise ValueError()
-        return visit(tree.body)
-    except (SyntaxError, ValueError, TypeError, ZeroDivisionError, RecursionError):
+        if isinstance(node, (ast.UnaryOp, ast.BinOp)) and type(node.op) in operations:
+            args = [visit(node.operand)] if isinstance(node, ast.UnaryOp) else [visit(node.left), visit(node.right)]
+            if max(map(abs, args)) <= 10**12 and (not isinstance(node.op, (ast.LShift, ast.RShift)) or 0 <= args[1] < 64):
+                return operations[type(node.op)](*args)
+        raise ValueError()
+    try:
+        value = re.sub(r"\x60([A-Za-z_]\w*)", r"\1", expression.strip())
+        value = re.sub(r"\d+'[sS]?([bBoOdDhH])([\da-fA-F_]+)",
+                       lambda m: str(int(m[2].replace("_", ""), {"b": 2, "o": 8, "d": 10, "h": 16}[m[1].lower()])), value)
+        tree = ast.parse(value, mode="eval")
+        return visit(tree.body) if sum(1 for _ in ast.walk(tree)) <= 100 else None
+    except (SyntaxError, ValueError, TypeError, ArithmeticError, RecursionError):
         return None
 
 
 class SourceProject:
     def __init__(self, files, top, defines=None, include_dirs=None, texts=None):
-        self.files = [str(Path(p).resolve()) for p in files]
-        self.top = top
-        self.initial_defines = dict(defines or {})
+        self.files = list(dict.fromkeys(str(Path(p).resolve()) for p in files))
+        self.top, self.initial_defines = top, dict(defines or {})
         self.include_dirs = [str(Path(p).resolve()) for p in include_dirs or []]
         self.texts, self.encodings, self.modules = {}, {}, {}
-        self.file_macros = {}
         self.compilation_views, self.module_macros = {}, {}
         self.macros = dict(self.initial_defines)
         for file in self.files:
-            content, encoding = read_source(file)
-            self.texts[file] = texts[file] if texts is not None and file in texts else content
-            self.encodings[file] = encoding
+            content, self.encodings[file] = read_source(file)
+            self.texts[file] = texts.get(file, content) if texts is not None else content
         for file in self.files:
             self.preprocess(file, [])
         for file in self.files:
-            processed = self.compilation_views[file][0]
-            for mod in parse_file(file, self.texts[file], processed):
-                if mod.name in self.modules:
-                    raise EasyConnectError("重复模块 %s: %s 和 %s；请检查 filelist/条件宏" %
-                                           (mod.name, self.modules[mod.name].file, file))
-                self.modules[mod.name] = mod
-                self.module_macros[mod.name] = self.compilation_views[file][1]
+            self.load_modules(file)
         if top not in self.modules:
             raise EasyConnectError("顶层模块不存在: " + top)
         self.filter_instances()
 
     def resolve_include(self, file, name):
-        for directory in [str(Path(file).parent)] + self.include_dirs:
-            candidate = str((Path(directory) / name).resolve())
-            if candidate in self.texts:
-                return candidate
+        candidates = [str((Path(d) / name).resolve()) for d in [Path(file).parent] + self.include_dirs]
+        found = next((p for p in candidates if p in self.texts), None)
         matches = [p for p in self.files if Path(p).name == name]
-        if len(matches) == 1:
-            return matches[0]
+        if found or len(matches) == 1:
+            return found or matches[0]
         raise EasyConnectError("无法唯一定位 include %s (来自 %s)；使用 -I 指定目录" % (name, file))
 
     def preprocess(self, file, ancestry):
         if file in ancestry:
-            raise EasyConnectError("循环 include: " + file)
-        self.file_macros.setdefault(file, dict(self.macros))
-        text = self.texts[file]
-        clean = mask_comments(text)
-        result, stack, active, continuation = [], [], True, False
-        for original, line in zip(text.splitlines(True), clean.splitlines(True)):
-            directive = re.match(r"\s*`(\w+)\b(.*)", line)
-            if continuation:
-                result.append(blank(original))
-                continuation = line.rstrip().endswith("\\")
-                continue
-            if directive:
-                command, body = directive.groups()
-                if command in ("ifdef", "ifndef"):
-                    symbol = body.strip().split()[0]
-                    condition = symbol in self.macros
-                    if command == "ifndef": condition = not condition
-                    stack.append([active, condition, False])
-                    active = active and condition
-                elif command in ("else", "elsif"):
-                    if not stack or stack[-1][2]:
-                        raise EasyConnectError("条件编译指令不匹配: " + file)
-                    parent, used, _ = stack[-1]
-                    condition = not used and (command == "else" or body.strip().split()[0] in self.macros)
-                    stack[-1][1] = used or condition
-                    stack[-1][2] = command == "else"
-                    active = parent and condition
-                elif command == "endif":
-                    if not stack:
-                        raise EasyConnectError("多余 endif: " + file)
-                    active = stack.pop()[0]
-                elif active and command == "define":
-                    definition = re.match(r"\s*([A-Za-z_]\w*)(.*)", body)
-                    if definition:
-                        self.macros[definition.group(1)] = definition.group(2).strip() or "1"
-                elif active and command == "undef":
-                    self.macros.pop(body.strip(), None)
-                elif active and command == "include":
-                    match = re.search(r'"([^"\r\n]+)"', body)
-                    if not match:
-                        raise EasyConnectError("不支持宏展开的 include: " + file)
-                    self.preprocess(self.resolve_include(file, match.group(1)), ancestry + [file])
-                if command in ("include", "define", "undef", "ifdef", "ifndef", "else", "elsif", "endif", "timescale", "default_nettype", "resetall", "celldefine", "endcelldefine"):
-                    result.append(blank(original))
-                    continuation = line.rstrip().endswith("\\")
-                    continue
-            result.append(original if active else blank(original))
+            raise EasyConnectError("循环 include: " + " -> ".join(ancestry + [file]))
+        text, stack, active, result, cursor = self.texts[file], [], True, [], 0
+        for match in DIRECTIVE.finditer(mask_comments(text)):
+            result.append(text[cursor:match.start()] if active else blank(text[cursor:match.start()]))
+            command, body = match[1], match.group().split(match[1], 1)[1].strip()
+            symbol = body.split()[0] if body else ""
+            if command in ("ifdef", "ifndef"):
+                if not symbol:
+                    source_error(text, file, match.start(), "条件编译指令缺少宏名")
+                condition = (symbol in self.macros) == (command == "ifdef")
+                stack.append([active, condition, False, match.start()])
+                active = active and condition
+            elif command in ("else", "elsif"):
+                if not stack or stack[-1][2] or command == "elsif" and not symbol:
+                    source_error(text, file, match.start(), "条件编译指令不匹配")
+                parent, used, _, opening = stack[-1]
+                condition = not used and (command == "else" or symbol in self.macros)
+                stack[-1], active = [parent, used or condition, command == "else", opening], parent and condition
+            elif command == "endif":
+                if not stack:
+                    source_error(text, file, match.start(), "多余 endif")
+                active = stack.pop()[0]
+            elif active and command == "define":
+                definition = re.match(r"([A-Za-z_$][\w$]*)([\s\S]*)", body)
+                if definition:
+                    self.macros[definition[1]] = definition[2].strip() or "1"
+            elif active and command == "undef":
+                self.macros.pop(symbol, None)
+            elif active and command == "include":
+                include = re.fullmatch(r'"([^"\r\n]+)"', body)
+                try:
+                    if not include:
+                        raise EasyConnectError("不支持宏展开的 include")
+                    self.preprocess(self.resolve_include(file, include[1]), ancestry + [file])
+                except EasyConnectError as exc:
+                    source_error(text, file, match.start(), str(exc))
+            result.append(blank(text[match.start():match.end()]))
+            cursor = match.end()
+        result.append(text[cursor:] if active else blank(text[cursor:]))
         if stack:
-            raise EasyConnectError("条件编译块未闭合: " + file)
-        processed = "".join(result)
-        previous = self.compilation_views.get(file)
-        has_modules = bool(re.search(r"\bmodule\b", mask_comments(processed, True)))
+            source_error(text, file, stack[-1][3], "条件编译块未闭合")
+        processed, previous = "".join(result), self.compilation_views.get(file)
+        has_modules = any(m.lastgroup for m in MODULE_BOUNDARY.finditer(mask_comments(processed, True)))
         if previous is None or has_modules:
-            if previous and has_modules and re.search(r"\bmodule\b", mask_comments(previous[0], True)) and previous[0] != processed:
-                raise EasyConnectError("同一源码在不同编译宏上下文中包含不同模块定义，1.0 无法可靠编辑: " + file)
+            if previous and has_modules and any(m.lastgroup for m in MODULE_BOUNDARY.finditer(mask_comments(previous[0], True))) and previous[0] != processed:
+                raise EasyConnectError("同一源码在不同编译宏上下文中包含不同模块定义，无法可靠编辑: " + file)
             self.compilation_views[file] = (processed, dict(self.macros))
         return processed
 
+    def load_modules(self, file):
+        for mod in parse_file(file, self.texts[file], self.compilation_views[file][0]):
+            if mod.name in self.modules:
+                other = self.modules[mod.name]
+                source_error(mod.text, file, mod.start, "重复模块 %s；另一处定义: %s:%d" % (mod.name, other.file, other.line(other.start)), mod.name)
+            self.modules[mod.name], self.module_macros[mod.name] = mod, self.compilation_views[file][1]
+
     def filter_instances(self):
         for mod in self.modules.values():
-            mod.instances = [inst for inst in mod.instances if inst.module in self.modules]
-            for ordinal, inst in enumerate(mod.instances):
-                inst.ordinal = ordinal
+            mod.instances = parse_instances(mod, self.modules)
 
     def refresh(self, file):
-        # Edits change module items, never compilation directives. Reparse the
-        # affected file using its original compilation-unit macro environment.
-        saved = self.macros
-        self.macros = dict(self.file_macros[file])
-        self.compilation_views.pop(file, None)
-        try:
-            processed = self.preprocess(file, [])
-        finally:
-            self.macros = saved
-        replacements = parse_file(file, self.texts[file], processed)
-        retained = {name: mod for name, mod in self.modules.items() if mod.file != file}
-        for mod in replacements:
-            if mod.name in retained: raise EasyConnectError("重复模块: " + mod.name)
-            retained[mod.name] = mod
-            self.module_macros[mod.name] = self.compilation_views[file][1]
-        self.modules = retained
-        self.filter_instances()
+        # Replay the same input order, including include guards and macro state.
+        self.__init__(self.files, self.top, self.initial_defines, self.include_dirs, self.texts)
 
     def graph(self, rtl_root, state=None):
         modules = {}
         for name, mod in self.modules.items():
-            io_start = mod.line(mod.io_start)
-            io_end = mod.line(mod.io_end)
             records = []
             for inst in mod.instances:
                 child = self.modules[inst.module]
-                records.append({
-                    "module": inst.module, "instance": inst.name, "style": "normal", "status": "normal",
+                records.append({"module": inst.module, "instance": inst.name, "style": "normal", "status": "normal",
                     "start_line": mod.line(inst.start), "end_line": mod.line(inst.end - 1),
                     "instance_start_line": mod.line(inst.start), "instance_end_line": mod.line(inst.end - 1),
                     "module_start_line": child.line(child.start), "module_end_line": child.line(child.end - 1),
-                    "port_start_line": child.line(child.io_start),
-                    "port_end_line": child.line(child.io_end),
-                    "parent_port_start_line": io_start, "parent_port_end_line": io_end,
-                    "file": mod.file, "module_file": child.file,
-                    "start_offset": inst.start, "end_offset": inst.end,
+                    "port_start_line": child.line(child.io_start), "port_end_line": child.line(child.io_end),
+                    "parent_port_start_line": mod.line(mod.io_start), "parent_port_end_line": mod.line(mod.io_end),
+                    "file": mod.file, "module_file": child.file, "start_offset": inst.start, "end_offset": inst.end,
                     "connection_start_offset": inst.opening, "connection_end_offset": inst.closing,
-                    "ordinal": inst.ordinal, "named_ports": inst.named,
-                    "parameter_override": bool(inst.parameters)
-                })
-            modules[name] = {"file": mod.file, "start_line": mod.line(mod.start),
-                             "end_line": mod.line(mod.end - 1), "port_start_line": io_start,
-                             "port_end_line": io_end, "instantiations": records}
-        result = {
-            "schema_version": "1.0", "view": "source_hierarchy", "elaborated": False,
-            "frontend": {"name": "EasyConnect", "version": "1.0"},
-            "input_config": {"rtl_folder": str(Path(rtl_root).resolve()), "top": self.top,
-                             "files": self.files, "include_dirs": self.include_dirs,
-                             "defines": self.initial_defines},
-            "roots": [self.top], "modules": modules,
-            "sources": {p: {"sha256": digest(self.texts[p].encode(self.encodings[p])),
-                            "encoding": self.encodings[p]} for p in self.files},
-            "note": "Source references only; for/generate are not identified or expanded. style/status are normal."
-        }
+                    "ordinal": inst.ordinal, "named_ports": inst.named, "parameter_override": bool(inst.parameters),
+                    "connections": {p: b[0] for p, b in inst.bindings.items()} if inst.named else split_expressions(mod.text[inst.opening + 1:inst.closing])})
+            modules[name] = {"file": mod.file, "start_line": mod.line(mod.start), "end_line": mod.line(mod.end - 1),
+                             "port_start_line": mod.line(mod.io_start), "port_end_line": mod.line(mod.io_end),
+                             "ports": [p for p, d in mod.declarations.items() if d.direction], "instantiations": records}
+        result = {"schema_version": "1.0", "view": "source_hierarchy", "elaborated": False,
+                  "frontend": {"name": "EasyConnect", "version": "1.0"}, "roots": [self.top], "modules": modules,
+                  "input_config": {"rtl_folder": str(Path(rtl_root).resolve()), "top": self.top,
+                                   "files": self.files, "include_dirs": self.include_dirs, "defines": self.initial_defines},
+                  "sources": {p: {"sha256": digest(self.texts[p].encode(self.encodings[p])), "encoding": self.encodings[p]} for p in self.files},
+                  "note": "Source references only; for/generate are not expanded. style/status are normal."}
         if state is not None:
             result["_easyconnect"] = state
         return result
@@ -579,67 +457,59 @@ def discover(rtl_folder, filelists=None, include_dirs=None, defines=None):
     root = Path(rtl_folder).resolve()
     if not root.is_dir():
         raise EasyConnectError("RTL 文件夹不存在: " + str(root))
-    all_files = sorted(str(p.resolve()) for p in root.rglob("*") if p.is_file() and p.suffix.lower() in (".v", ".sv"))
-    ordered, dirs, macros = [], list(include_dirs or []), dict(defines or {})
-    visited = set()
+    def rtl_files(folder):
+        return sorted(str(p.resolve()) for p in folder.rglob("*") if p.is_file() and p.suffix.lower() in (".v", ".sv"))
+    files, dirs, macros, visited = [], list(include_dirs or []), {}, set()
     def read_list(path):
         path = Path(path).resolve()
-        if str(path) in visited:
+        if path in visited:
             return
-        visited.add(str(path))
-        if not path.is_file():
-            raise EasyConnectError("filelist 不存在: " + str(path))
-        text, _ = read_source(path)
-        entries = re.findall(r'"[^"\r\n]*"|\S+', mask_comments(text, strings=False))
-        index = 0
-        while index < len(entries):
-            entry = entries[index].strip('"')
+        visited.add(path)
+        entries = iter(re.findall(r'"[^"\r\n]*"|\S+', mask_comments(read_source(path)[0])))
+        for token in entries:
+            entry = token.strip('"')
             if entry in ("-f", "-F", "-I", "-y", "-v", "-D"):
-                index += 1
-                if index == len(entries): raise EasyConnectError("filelist 缺少参数: " + entry)
-                value = entries[index].strip('"')
-                if entry in ("-f", "-F"): read_list(path.parent / value)
+                value = next(entries, "").strip('"')
+                if not value:
+                    raise EasyConnectError("filelist %s 缺少参数: %s" % (path, entry))
+                target = (path.parent / value).resolve()
+                if entry in ("-f", "-F"):
+                    read_list(target)
                 elif entry in ("-I", "-y"):
-                    directory = (path.parent / value).resolve()
-                    dirs.append(str(directory))
-                    if entry == "-y": ordered.extend(str(p.resolve()) for p in directory.rglob("*") if p.suffix.lower() in (".v", ".sv"))
-                elif entry == "-D":
+                    dirs.append(str(target))
+                    if entry == "-y":
+                        files.extend(rtl_files(target))
+                elif entry == "-v":
+                    files.append(str(target))
+                else:
                     key, _, val = value.partition("=")
                     macros[key] = val or "1"
-                else: ordered.append(str((path.parent / value).resolve()))
-            elif entry.startswith("+incdir+"):
-                dirs.extend(str((path.parent / value).resolve()) for value in entry[len("+incdir+"):].split("+") if value)
+            elif entry.startswith(("+incdir+", "-I")):
+                values = entry[8:].split("+") if entry.startswith("+") else [entry[2:]]
+                dirs.extend(str((path.parent / p).resolve()) for p in values if p)
             elif entry.startswith("+define+"):
-                for value in entry[len("+define+"):].split("+"):
+                for value in entry[8:].split("+"):
                     key, _, val = value.partition("=")
-                    if key: macros[key] = val or "1"
-            elif entry.startswith("-I"):
-                dirs.append(str((path.parent / entry[2:]).resolve()))
+                    if key:
+                        macros[key] = val or "1"
             elif entry.lower().endswith((".v", ".sv", ".vh", ".svh")):
-                ordered.append(str((path.parent / entry).resolve()))
+                files.append(str((path.parent / entry).resolve()))
             elif not entry.startswith(("+", "-")):
-                raise EasyConnectError("无法识别 filelist 条目: " + entry)
-            index += 1
-    selected_lists = list(filelists or [])
-    if not selected_lists:
-        automatic = root / "filelist.f"
-        if not automatic.exists() and root.name.lower() == "rtl": automatic = root.parent / "filelist.f"
-        if automatic.exists(): selected_lists.append(automatic)
-    for path in selected_lists:
+                raise EasyConnectError("无法识别 filelist %s 条目: %s" % (path, entry))
+    automatic = root / "filelist.f"
+    if not automatic.exists() and root.name.lower() == "rtl":
+        automatic = root.parent / "filelist.f"
+    for path in filelists or ([automatic] if automatic.exists() else []):
         read_list(path)
-    files = list(dict.fromkeys(ordered + all_files))
+    files = list(dict.fromkeys(files + rtl_files(root)))
     dirs = list(dict.fromkeys(str(Path(p).resolve()) for p in dirs))
     for file in files:
-        if not Path(file).is_file(): raise EasyConnectError("源码文件不存在: " + file)
-    index = 0
-    while index < len(files):
-        file = files[index]
-        text, _ = read_source(file)
-        for name in re.findall(r'(?m)^\s*`include\s+"([^"\r\n]+)"', mask_comments(text)):
-            candidates = [(Path(file).parent / name).resolve()] + [(Path(directory) / name).resolve() for directory in dirs]
+        for name in re.findall(r'(?m)^[ \t]*\x60include\s+"([^"\r\n]+)"', mask_comments(read_source(file)[0])):
+            candidates = [(Path(d) / name).resolve() for d in [Path(file).parent] + dirs]
             found = next((str(p) for p in candidates if p.is_file()), None)
-            if found and found not in files: files.append(found)
-        index += 1
+            if found and found not in files:
+                files.append(found)
+    macros.update(defines or {})
     return files, dirs, macros
 
 
